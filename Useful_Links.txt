@@ -1,0 +1,2 @@
+I have put the xArm DH parameters website link below, BUT THE ROBOT WILL BE CHANGED UNANIMOUSLY
+https://help.ufactory.cc/en/articles/4330809-kinematic-and-dynamic-parameters-of-ufactory-xarm-series 
