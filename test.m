@@ -6,3 +6,6 @@ xarm.plotRobot();
 
 % Enter teach mode where you can interact with the robot using sliders
 xarm.teachRobot();
+
+% Display the DH parameters
+xarm.displayDHParameters();
