@@ -29,7 +29,7 @@ classdef XArm6DOF < RobotBaseClass
             self.model.base = self.model.base.T * baseTr; % Apply base transformation
             self.model.tool = self.toolTr; % Set tool transformation
             self.PlotAndColourRobot(); % Plot and color the robot
-
+            self.model.plot(self.model.getpos())
             drawnow
         end
 
