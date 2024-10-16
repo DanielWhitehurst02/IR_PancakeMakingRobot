@@ -63,7 +63,7 @@ size_mat = Y.shape
 X = np.ones(size_mat) * 0.1
 
 
-# Combine one surface as a point cloud
+# Combine one surface as a point cloudS
 cube_points = np.hstack((X.reshape(-1, 1), Y.reshape(-1, 1), Z.reshape(-1, 1)))
 
 # Make a cube by rotating the single side by 0, 90, 180, 270 and around y to make the top and bottom faces
@@ -79,6 +79,12 @@ cube_points = np.concatenate([face for face in cube_points])
 
 cube_points = cube_points + np.tile([0.35,0.35,0.35], (np.size(cube_points, 0),1))    
 
+cube_normal = [0, 0.5, 0] 
+cube_point = [0,3,0]     
+
+# for range(steps):
+#     print()
+# ir.line_plane_intersection()
 
 fig = r1.plot(q_matrix[0,:], limits= [-1,1,-1,1,0,1])
 fig.ax.plot(x[0,:], x[1,:], x[2,:], 'k.', linewidth = 0.2) #Black line plot
