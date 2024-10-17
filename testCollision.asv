@@ -33,9 +33,7 @@ collisionHandler.drawEllipsoids();
 
 % % Create a mesh (obstacle) and plot it
 
-center = [0.7,0,0.5];
-
-cubePoints = meshcube(0.5,0.5,[pi/3,pi/4,2*pi/7],0.02,center);
+cubePoints = meshcube(0.5,0.5,[pi/3,pi/4,2*pi/7],0.02,[0.3,0,0.5]);
 
 
 %% Animate robot with RMRC
@@ -56,26 +54,21 @@ endTr = transl(0.4, 0.4, 0.5);  % Example target transformation
 % Set the total time and control frequency
 t = 5;  % Total time for movement (in seconds)
 deltaT = 0.05;  % Control step time (in seconds
-steps = t/deltaT;
+
 
 % 
 % path.ResolvedMotionRateControl(startTr,endTr,t,deltaT);
 
 [s,x] = path.ResolvedMotionRateControlPath(startTr,endTr,t,deltaT);
 
-isCollision = false;
 
-for i=1:steps
+for i=1:size(x)
     for j=1:size(cubePoints)
-        dist = sqrt((cubePoints(j,1)-x(1,i))^2+(cubePoints(j,2)-x(2,i))^2+(cubePoints(j,3)-x(3,i))^2);
-        if any(dist < 0.01)
-            isCollision = true;
-            break;
-        end
+
+        dist = sqrt((cubePoints(1,j)-x(0,i))^2+(cubePoints(1,j)-x(1,i))^2+(cubePoints(3,j)-x(2,i))^2)
     end
 end
 
-isCollision
 
 plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
 
