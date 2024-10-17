@@ -23,62 +23,7 @@ axis([-1 1 -1 1 -0.5 1]);
 % Time vector for smooth animation
 t = 0:0.05:2;  % Adjust the timing to control the speed of motion
 
-% Define a function to move the robot and animate the grippers
-function move_robot_with_grippers(robot, leftFinger, rightFinger, start_T, end_T, t)
-    global isSpatulaAttached spatulaHandle spatulaVertices; % Access global variables
 
-    % Use a good initial joint configuration to avoid flipping
-    current_q = [0 -1.50796447372310 0.753982236861551 1.25663706143592 1.57079632679490 0];  % Initial guess with a natural starting position
-    
-    % Inverse kinematics to calculate joint angles for both positions using `ikcon`
-    q_start = robot.model.ikcon(start_T, current_q);  % Solve for start position
-    q_end = robot.model.ikcon(end_T, q_start);  % Solve for end position
-
-    % Ensure that ikcon successfully found a solution for both positions
-    if isempty(q_start) || isempty(q_end)
-        disp('Inverse kinematics failed to find a solution for one of the positions.');
-        return;  % Exit the function if IK fails
-    end
-    
-    % Generate joint trajectory using jtraj
-    q_traj = jtraj(q_start, q_end, length(t));
-    
-    % Animate the robot's movement and synchronize the grippers
-    for i = 1:length(t)
-        robot.model.animate(q_traj(i, :));
-    
-        % Get the transformation of the end-effector
-        endEffectorTr = robot.model.fkine(q_traj(i, :));
-    
-        % Update the grippers' positions to follow the end-effector
-        leftFinger.model.base = endEffectorTr.T * trotx(pi/2);
-        rightFinger.model.base = endEffectorTr.T * trotx(pi/2);
-    
-        leftFinger.model.animate(leftFinger.model.getpos);
-        rightFinger.model.animate(rightFinger.model.getpos);
-    
-        % If the spatula is attached, update its position to follow the end-effector
-        if isSpatulaAttached
-            spatulaTr = endEffectorTr.T * transl(0, 0, -0.05) * troty(pi/2);  % Correct transformation application
-            transformedVertices = [spatulaVertices, ones(size(spatulaVertices, 1), 1)] * spatulaTr';
-            set(spatulaHandle, 'Vertices', transformedVertices(:, 1:3));  % Update spatula position
-            drawnow;
-        end
-    
-        pause(0.01);  % Small pause for smoother rendering
-    end
-end
-
-% Attach the spatula when the robot reaches the spatula's position
-function attach_spatula(spatulaH, spatulaV)
-    global isSpatulaAttached spatulaHandle spatulaVertices; % Access global variables
-    
-    % Set spatula as attached
-    isSpatulaAttached = true;
-    spatulaHandle = spatulaH;
-    spatulaVertices = spatulaV;
-    disp('Spatula attached to the robot.'); % Debug message
-end
 
 % Define the desired end-effector orientation (Z-axis pointing up, aligned with the XY plane)
 desired_orientation = troty(-pi/2);  % This makes sure the end-effector is facing upward
@@ -230,5 +175,61 @@ function [plyHandle, vertices] = LoadPLYModel(fileName, transformMatrix, scale)
     disp([fileName, ' model loaded and displayed.']);
 end
 
+% Define a function to move the robot and animate the grippers
+function move_robot_with_grippers(robot, leftFinger, rightFinger, start_T, end_T, t)
+    global isSpatulaAttached spatulaHandle spatulaVertices; % Access global variables
+
+    % Use a good initial joint configuration to avoid flipping
+    current_q = [0 -1.50796447372310 0.753982236861551 1.25663706143592 1.57079632679490 0];  % Initial guess with a natural starting position
+    
+    % Inverse kinematics to calculate joint angles for both positions using `ikcon`
+    q_start = robot.model.ikcon(start_T, current_q);  % Solve for start position
+    q_end = robot.model.ikcon(end_T, q_start);  % Solve for end position
+
+    % Ensure that ikcon successfully found a solution for both positions
+    if isempty(q_start) || isempty(q_end)
+        disp('Inverse kinematics failed to find a solution for one of the positions.');
+        return;  % Exit the function if IK fails
+    end
+    
+    % Generate joint trajectory using jtraj
+    q_traj = jtraj(q_start, q_end, length(t));
+    
+    % Animate the robot's movement and synchronize the grippers
+    for i = 1:length(t)
+        robot.model.animate(q_traj(i, :));
+    
+        % Get the transformation of the end-effector
+        endEffectorTr = robot.model.fkine(q_traj(i, :));
+    
+        % Update the grippers' positions to follow the end-effector
+        leftFinger.model.base = endEffectorTr.T * trotx(pi/2);
+        rightFinger.model.base = endEffectorTr.T * trotx(pi/2);
+    
+        leftFinger.model.animate(leftFinger.model.getpos);
+        rightFinger.model.animate(rightFinger.model.getpos);
+    
+        % If the spatula is attached, update its position to follow the end-effector
+        if isSpatulaAttached
+            spatulaTr = endEffectorTr.T * transl(0, 0, -0.05) * troty(pi/2);  % Correct transformation application
+            transformedVertices = [spatulaVertices, ones(size(spatulaVertices, 1), 1)] * spatulaTr';
+            set(spatulaHandle, 'Vertices', transformedVertices(:, 1:3));  % Update spatula position
+            drawnow;
+        end
+    
+        pause(0.01);  % Small pause for smoother rendering
+    end
+end
+
+% Attach the spatula when the robot reaches the spatula's position
+function attach_spatula(spatulaH, spatulaV)
+    global isSpatulaAttached spatulaHandle spatulaVertices; % Access global variables
+    
+    % Set spatula as attached
+    isSpatulaAttached = true;
+    spatulaHandle = spatulaH;
+    spatulaVertices = spatulaV;
+    disp('Spatula attached to the robot.'); % Debug message
+end
 
 
