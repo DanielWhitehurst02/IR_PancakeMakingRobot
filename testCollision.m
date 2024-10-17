@@ -33,29 +33,7 @@ collisionHandler.drawEllipsoids();
 
 % % Create a mesh (obstacle) and plot it
 
-% One side of the cube
-[Y,Z] = meshgrid(-0.25:0.02:0.25,-0.25:0.02:0.25);
-sizeMat = size(Y);
-X = repmat(0.25,sizeMat(1),sizeMat(2));
-oneSideOfCube_h = surf(X,Y,Z);
-
-% Combine one surface as a point cloud
-cubePoints = [X(:),Y(:),Z(:)];
-
-% Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
-cubePoints = [ cubePoints ...
-             ; cubePoints * rotz(pi/2)...
-             ; cubePoints * rotz(pi) ...
-             ; cubePoints * rotz(3*pi/2) ...
-             ; cubePoints * roty(pi/2) ...
-             ; cubePoints * roty(-pi/2)];         
-
-% Plot the cube's point cloud         
-% cubeAtOigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
-cubePoints = cubePoints + repmat([0.3,0,0.3],size(cubePoints,1),1);
-cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
-axis equal
-
+cubePoints = meshcube(0.5,0.5,pi/3,0.02,[0.3,0,0.5]);
 
 
 %% Animate robot with RMRC
