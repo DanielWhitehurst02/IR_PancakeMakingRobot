@@ -33,7 +33,7 @@ collisionHandler.drawEllipsoids();
 
 % % Create a mesh (obstacle) and plot it
 
-cubePoints = meshcube(0.5,0.5,pi/3,0.02,[0.3,0,0.5]);
+cubePoints = meshcube(0.5,0.5,[pi/3,pi/4,2*pi/7],0.02,[0.3,0,0.5]);
 
 
 %% Animate robot with RMRC
