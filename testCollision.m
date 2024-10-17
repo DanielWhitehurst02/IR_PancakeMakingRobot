@@ -5,6 +5,7 @@ close all;
 
 set(0, 'DefaultFigureWindowStyle', 'docked'); % Dock figures in the workspace
 
+
 %% Define the robot and its ellipsoid centers and radii
 robot = UR3e(transl(0, 0, 0)); % Initialize the UR3 robot
 
@@ -33,7 +34,7 @@ collisionHandler.drawEllipsoids();
 
 % % Create a mesh (obstacle) and plot it
 
-center = [0.7,0,0.5];
+center = [0.5,0,0.5];
 
 cubePoints = meshcube(0.5,0.5,[pi/3,pi/4,2*pi/7],0.02,center);
 
@@ -56,26 +57,13 @@ endTr = transl(0.4, 0.4, 0.5);  % Example target transformation
 % Set the total time and control frequency
 t = 5;  % Total time for movement (in seconds)
 deltaT = 0.05;  % Control step time (in seconds
-steps = t/deltaT;
-
-% 
+ 
 % path.ResolvedMotionRateControl(startTr,endTr,t,deltaT);
 
-[s,x] = path.ResolvedMotionRateControlPath(startTr,endTr,t,deltaT);
+[s,x,steps] = path.ResolvedMotionRateControlPath(startTr,endTr,t,deltaT);
 
-isCollision = false;
 
-for i=1:steps
-    for j=1:size(cubePoints)
-        dist = sqrt((cubePoints(j,1)-x(1,i))^2+(cubePoints(j,2)-x(2,i))^2+(cubePoints(j,3)-x(3,i))^2);
-        if any(dist < 0.01)
-            isCollision = true;
-            break;
-        end
-    end
-end
-
-isCollision
+isCollision = pathCheck(x,cubePoints);
 
 plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
 
@@ -88,3 +76,15 @@ else
 end
 
 
+function isCollision = pathCheck(path, obstaclePoints)
+    isCollision = false;
+    for i=1:length(path)
+        for j=1:size(obstaclePoints)
+            dist = sqrt((obstaclePoints(j,1)-path(1,i))^2+(obstaclePoints(j,2)-path(2,i))^2+(obstaclePoints(j,3)-path(3,i))^2);
+            if any(dist < 0.1)
+                isCollision = true;
+                break;
+            end
+        end
+    end
+end

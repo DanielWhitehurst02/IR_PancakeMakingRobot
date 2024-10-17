@@ -54,6 +54,8 @@ classdef CollisionEllipsoid < handle
         function [X, Y, Z] = generateEllipsoid(~, center, radii)
             [X, Y, Z] = ellipsoid(center(1), center(2), center(3), radii(1), radii(2), radii(3));
         end
+
+
         
         % Function to check for collisions with an obstacle's mesh points
         function isCollision = detectCollision(obj, obstaclePoints)

@@ -114,5 +114,40 @@ classdef RMRC < handle
             end
         end
 
+                % Resolved Motion Rate Control Method
+        function [s,x,steps] = ResolvedMotionRateControlPath(self, startTr, endTr, time, deltaT)
+
+            % Initialize parameters
+            steps = time / deltaT;
+            epsilon = 0.1;  % Manipulability threshold
+            W = diag([1 1 1 0.1 0.1 0.1]);  % Weighting matrix
+
+            q0 = zeros(1, self.robot.model.n);  % Initial joint angles
+            self.qMatrix = zeros(steps, self.robot.model.n);
+            self.positionError = zeros(3, steps);  % Track position errors
+            self.angleError = zeros(3, steps);     % Track orientation errors
+            self.manipulability = zeros(steps, 1); % Track manipulability
+            
+            % Get the initial joint configuration using inverse kinematics
+            self.qMatrix(1,:) = self.robot.model.ikcon(startTr, q0);
+            
+            % Convert the start and end orientations to quaternions for SLERP
+            R_start = startTr(1:3, 1:3);
+            R_end = endTr(1:3, 1:3);
+            q_start = UnitQuaternion(R_start);
+            q_end = UnitQuaternion(R_end);
+            
+            % Linear trapezoidal blending for position trajectory
+            s = lspb(0, 1, steps);  % Generate scalar for trajectory
+            
+            for i=1:steps
+                pos_interp = transl((1-s(i))*startTr(1:3,4)' + s(i)*endTr(1:3,4)');
+                x(1,i) = pos_interp(1,4);
+                x(2,i) = pos_interp(2,4);
+                x(3,i) = pos_interp(3,4);
+            end
+
+        end
+
     end
 end
