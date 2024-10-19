@@ -131,11 +131,11 @@ classdef RMRC < handle
             % Get the initial joint configuration using inverse kinematics
             self.qMatrix(1,:) = self.robot.model.ikcon(startTr, q0);
             
-            % Convert the start and end orientations to quaternions for SLERP
-            R_start = startTr(1:3, 1:3);
-            R_end = endTr(1:3, 1:3);
-            q_start = UnitQuaternion(R_start);
-            q_end = UnitQuaternion(R_end);
+            % % Convert the start and end orientations to quaternions for SLERP
+            % R_start = startTr(1:3, 1:3);
+            % R_end = endTr(1:3, 1:3);
+            % q_start = UnitQuaternion(R_start);
+            % q_end = UnitQuaternion(R_end);
             
             % Linear trapezoidal blending for position trajectory
             s = lspb(0, 1, steps);  % Generate scalar for trajectory
@@ -147,6 +147,11 @@ classdef RMRC < handle
                 x(3,i) = pos_interp(3,4);
             end
 
+        end
+        
+        %getQmatrix outputs qmatrix
+        function qMatrix = getQmatrix()
+            qMatrix = self.qMatrix
         end
 
     end

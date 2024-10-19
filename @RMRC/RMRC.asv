@@ -1,75 +1,52 @@
-classdef MotionHandler
-    %MotionHandler handles robot motion control and collision 
-    %   Detailed explanation goes here
-
+classdef RMRC < handle
     properties
-        collisionHandler
-        robot
-        RMRC
-        obstaclePoints
-        running
-        obstaclesupdated
+        robot; 
+        qMatrix; 
+        collisionChecker;
+        positionError;   % Track position error
+        angleError;      % Track orientation error
+        manipulability;  % Track manipulability
     end
-
-    methods
-
-        %Constructor
-        function self = MotionHandler(robot, centerPoints, radii, obstaclePoints)         
+    
+    methods 
+        % Constructor
+        function self = RMRC(robot)         
             self.robot = robot;
-            self.obstaclePoints = obstaclePoints;
-            self.collisionHandler = CollisionEllipsoid(robot, centerPoints, radii);
-            self.RMRC = RMRC(robot);
-            self.running = true;
-            self.obstaclesupdated = false;
         end
         
-        function updateObstacle(self, obstaclePoints)
-            %updateObstacle updates point cloud of obstacles
-            % updates point cloud of obstacles
-            self.obstaclePoints = obstaclePoints;
-            self.obstaclesupdated = true;
+        % Collision Checker Setup
+        function setCollision(self, robot, centerPoints, radii)
+            self.collisionChecker = CollisionChecker(robot, centerPoints, radii);
         end
+        
+        % Resolved Motion Rate Control Method
+        function ResolvedMotionRateControl(self, startTr, endTr, time, deltaT)
 
-        %function to check path for collisions
-        function isCollision = pathCheck(self, path, obstaclePoints)
-            %pathCheck checks a path for collisions
-            %   Detailed explanation goes here
-            isCollision = false;
-            for i=1:length(path)
-                for j=1:size(obstaclePoints)
-                    dist = sqrt((obstaclePoints(j,1)-path(1,i))^2+(obstaclePoints(j,2)-path(2,i))^2+(obstaclePoints(j,3)-path(3,i))^2);
-                    if any(dist < 0.1)
-                        isCollision = true;
-                        break;
-                    end
-                end
-            end
-        end
+            % Initialize parameters
+            steps = time / deltaT;
+            epsilon = 0.1;  % Manipulability threshold
+            W = diag([1 1 1 0.1 0.1 0.1]);  % Weighting matrix
 
-        function [stopped,currentgoal] = eStop(self)
-            %eStop Function to handle an emergency stop command
-            %   Detailed explanation goes here
-            if collision == true
-                self.running = false;
-            end
-        end
-
-        function run(self,obstaclePoints , startTr, endTr, time, deltaT)
+            q0 = zeros(1, self.robot.model.n);  % Initial joint angles
+            self.qMatrix = zeros(steps, self.robot.model.n);
+            self.positionError = zeros(3, steps);  % Track position errors
+            self.angleError = zeros(3, steps);     % Track orientation errors
+            self.manipulability = zeros(steps, 1); % Track manipulability
             
-            [s,x,steps] = self.RMRC.ResolvedMotionRateControlPath(startTr, endTr, time, deltaT);
-
-            collision = self.pathCheck(x, self.obstaclePoints);
-            if collision
-                print("collision on path")
-            end
+            % Get the initial joint configuration using inverse kinematics
+            self.qMatrix(1,:) = self.robot.model.ikcon(startTr, q0);
+            
             % Convert the start and end orientations to quaternions for SLERP
             R_start = startTr(1:3, 1:3);
             R_end = endTr(1:3, 1:3);
             q_start = UnitQuaternion(R_start);
             q_end = UnitQuaternion(R_end);
-
-            for i=1:steps-1
-                
+            
+            % Linear trapezoidal blending for position trajectory
+            s = lspb(0, 1, steps);  % Generate scalar for trajectory
+            
+            % RMRC loop over time steps
+            for i = 1:steps-1
                 % Interpolate position and orientation
                 pos_interp = transl((1-s(i))*startTr(1:3,4)' + s(i)*endTr(1:3,4)');
                 q_interp = q_start.interp(q_end, s(i));  % SLERP for orientation
@@ -131,19 +108,45 @@ classdef MotionHandler
                 self.positionError(:, i) = deltaX;
                 self.angleError(:, i) = tr2rpy(Rd * Ra');
                 
-                %check for collisionsobstaclePoints
-                collision = self.collisionhandler.isCollision(self.obstaclePoints);
-                if collision
-                    self.estop()
-                    break
-                end
-
                 % Animate the robot at the new joint configuration
                 self.robot.model.animate(self.qMatrix(i+1,:));
                 drawnow();
-                
-                pause(0.01)
             end
+        end
+
+                % Resolved Motion Rate Control Method
+        function [s,x,steps] = ResolvedMotionRateControlPath(self, startTr, endTr, time, deltaT)
+
+            % Initialize parameters
+            steps = time / deltaT;
+            epsilon = 0.1;  % Manipulability threshold
+            W = diag([1 1 1 0.1 0.1 0.1]);  % Weighting matrix
+
+            q0 = zeros(1, self.robot.model.n);  % Initial joint angles
+            self.qMatrix = zeros(steps, self.robot.model.n);
+            self.positionError = zeros(3, steps);  % Track position errors
+            self.angleError = zeros(3, steps);     % Track orientation errors
+            self.manipulability = zeros(steps, 1); % Track manipulability
+            
+            % Get the initial joint configuration using inverse kinematics
+            self.qMatrix(1,:) = self.robot.model.ikcon(startTr, q0);
+            
+            % Convert the start and end orientations to quaternions for SLERP
+            R_start = startTr(1:3, 1:3);
+            R_end = endTr(1:3, 1:3);
+            q_start = UnitQuaternion(R_start);
+            q_end = UnitQuaternion(R_end);
+            
+            % Linear trapezoidal blending for position trajectory
+            s = lspb(0, 1, steps);  % Generate scalar for trajectory
+            
+            for i=1:steps
+                pos_interp = transl((1-s(i))*startTr(1:3,4)' + s(i)*endTr(1:3,4)');
+                x(1,i) = pos_interp(1,4);
+                x(2,i) = pos_interp(2,4);
+                x(3,i) = pos_interp(3,4);
+            end
+
         end
 
     end

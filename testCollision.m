@@ -38,6 +38,8 @@ center = [0.5,0,0.5];
 
 cubePoints = meshcube(0.5,0.5,[pi/3,pi/4,2*pi/7],0.02,center);
 
+%% Create Motion Handler
+controller = MotionHandler(robot,centerPoints,radii,cubePoints);
 
 %% Animate robot with RMRC
 path = RMRC(robot);
@@ -61,30 +63,34 @@ deltaT = 0.05;  % Control step time (in seconds
 % path.ResolvedMotionRateControl(startTr,endTr,t,deltaT);
 
 [s,x,steps] = path.ResolvedMotionRateControlPath(startTr,endTr,t,deltaT);
-
-
-isCollision = pathCheck(x,cubePoints);
+% 
+% 
+% isCollision = pathCheck(x,cubePoints);
 
 plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
 
+% collision = controller.pathCheck(x , cubePoints)
+
+controller.run(cubePoints,startTr, endTr, t, deltaT)
+
 %% Check for collisions between the robot's ellipsoids and the obstacle
-isColliding = collisionHandler.detectCollision(cubePoints);
-if isColliding
-    disp('Collision detected with the obstacle!');
-else
-    disp('No collision detected.');
-end
+% isColliding = collisionHandler.detectCollision(cubePoints);
+% if isColliding
+%     disp('Collision detected with the obstacle!');
+% else
+%     disp('No collision detected.');
+% end
 
-
-function isCollision = pathCheck(path, obstaclePoints)
-    isCollision = false;
-    for i=1:length(path)
-        for j=1:size(obstaclePoints)
-            dist = sqrt((obstaclePoints(j,1)-path(1,i))^2+(obstaclePoints(j,2)-path(2,i))^2+(obstaclePoints(j,3)-path(3,i))^2);
-            if any(dist < 0.1)
-                isCollision = true;
-                break;
-            end
-        end
-    end
-end
+% 
+% function isCollision = pathCheck(path, obstaclePoints)
+%     isCollision = false;
+%     for i=1:length(path)
+%         for j=1:size(obstaclePoints)
+%             dist = sqrt((obstaclePoints(j,1)-path(1,i))^2+(obstaclePoints(j,2)-path(2,i))^2+(obstaclePoints(j,3)-path(3,i))^2);
+%             if any(dist < 0.1)
+%                 isCollision = true;
+%                 break;
+%             end
+%         end
+%     end
+% end
