@@ -52,7 +52,7 @@ classdef MotionHandler
                 self.running = false;
         end
 
-        function runRMRC(self,obstaclePoints , startTr, endTr, time, deltaT)
+        function runRMRC(self, startTr, endTr, time, deltaT)
             
             [s,x,steps] = self.RMRC.ResolvedMotionRateControlPath(startTr, endTr, time, deltaT);
 

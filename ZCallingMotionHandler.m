@@ -81,4 +81,4 @@ obstaclePoints2 = [0.05,0,0.5]
 
 motionHandler2 = MotionHandler(robot2,centerPoints_panda,radii_Panda,obstaclePoints2);
 
-motionHandler2.runRMRC(obstaclePoints2,transl(-0.2,0,1),transl(-0.2,-0.2,2),100,1);
+motionHandler2.runRMRC(transl(-0.2,0,1),transl(-0.2,-0.2,2),100,1);

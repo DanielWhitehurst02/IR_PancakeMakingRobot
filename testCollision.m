@@ -71,7 +71,7 @@ plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
 
 % collision = controller.pathCheck(x , cubePoints)
 
-controller.run(cubePoints,startTr, endTr, t, deltaT)
+controller.runRMRC(cubePoints,startTr, endTr, t, deltaT)
 
 %% Check for collisions between the robot's ellipsoids and the obstacle
 % isColliding = collisionHandler.detectCollision(cubePoints);
