@@ -66,7 +66,8 @@ classdef MotionHandler
             % Perform RMRC loop
             for i = 1:steps-1
                 % Interpolate position and orientation
-                pos_interp = transl((1 - s(i)) * startTr(1:3,4)' + s(i) * endTr(1:3,4)');
+                % pos_interp = transl((1 - s(i)) * startTr(1:3,4)' + s(i) * endTr(1:3,4)');
+                pos_interp = transl((1-s(i))*startTr(1:3,4)' + s(i)*endTr(1:3,4)');
                 q_interp = UnitQuaternion(startTr(1:3,1:3)).interp(UnitQuaternion(endTr(1:3,1:3)), s(i));  % SLERP for orientation
                 R_interp = q_interp.R;
                 R_homogeneous = [R_interp, [0; 0; 0]; 0 0 0 1];  % 4x4 matrix
@@ -75,8 +76,13 @@ classdef MotionHandler
                 T_desired = pos_interp * R_homogeneous;
 
                 % Get current transformation matrix
-                T_current = self.robot.model.fkine(self.RMRC.qMatrix(i,:));
-
+                T_current_struct = self.robot.model.fkine(self.RMRC.qMatrix(i,:));
+                if isobject(T_current_struct)
+                    T_current = T_current_struct.T;
+                else
+                    T_current = T_current_struct;
+                end
+                
                 % Compute position and orientation errors
                 deltaX = T_desired(1:3,4) - T_current(1:3,4);
                 Rd = T_desired(1:3, 1:3);
