@@ -26,6 +26,8 @@ radii = [0.08, 0.09, 0.055;
          0.04, 0.045, 0.125; 
          0.0, 0.0, 0.0;]; 
 
+% robot.model.tool
+
 %% Create an instance of the CollisionEllipsoid class
 collisionHandler = CollisionEllipsoid(robot, centerPoints, radii);
 
@@ -34,12 +36,16 @@ collisionHandler.drawEllipsoids();
 
 % % Create a mesh (obstacle) and plot it
 
+
+
 center = [0.5,0,0.5];
 
 cubePoints = meshcube(0.5,0.5,[pi/3,pi/4,2*pi/7],0.02,center);
 
 %% Create Motion Handler
 controller = MotionHandler(robot,centerPoints,radii,cubePoints);
+
+
 
 %% Animate robot with RMRC
 path = RMRC(robot);
@@ -71,7 +77,11 @@ plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
 
 % collision = controller.pathCheck(x , cubePoints)
 
-controller.runRMRC(cubePoints,startTr, endTr, t, deltaT)
+% controller.obstaclePoints(cubePoints);
+
+controller.runRMRC(startTr, endTr, t, deltaT)
+% controller.runIK(startTr, endTr, t, deltaT)
+
 
 %% Check for collisions between the robot's ellipsoids and the obstacle
 % isColliding = collisionHandler.detectCollision(cubePoints);

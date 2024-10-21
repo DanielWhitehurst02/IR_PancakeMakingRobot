@@ -5,6 +5,7 @@ close all;
 
 set(0, 'DefaultFigureWindowStyle', 'docked'); % Dock figures in the workspace
 
+
 %% Define the robot and its ellipsoid centers and radii
 robot = UR3e(transl(0, 0, 0)); % Initialize the UR3 robot
 
@@ -25,6 +26,8 @@ radii = [0.08, 0.09, 0.055;
          0.04, 0.045, 0.125; 
          0.0, 0.0, 0.0;]; 
 
+% robot.model.tool
+
 %% Create an instance of the CollisionEllipsoid class
 collisionHandler = CollisionEllipsoid(robot, centerPoints, radii);
 
@@ -33,7 +36,15 @@ collisionHandler.drawEllipsoids();
 
 % % Create a mesh (obstacle) and plot it
 
-cubePoints = meshcube(0.5,0.5,[pi/3,pi/4,2*pi/7],0.02,[0.3,0,0.5]);
+
+
+center = [0.5,0,0.5];
+
+cubePoints = meshcube(0.5,0.5,[pi/3,pi/4,2*pi/7],0.02,center);
+
+%% Create Motion Handler
+controller = MotionHandler(robot,centerPoints,radii,cubePoints);
+
 
 
 %% Animate robot with RMRC
@@ -54,30 +65,43 @@ endTr = transl(0.4, 0.4, 0.5);  % Example target transformation
 % Set the total time and control frequency
 t = 5;  % Total time for movement (in seconds)
 deltaT = 0.05;  % Control step time (in seconds
-
-
-% 
+ 
 % path.ResolvedMotionRateControl(startTr,endTr,t,deltaT);
 
-[s,x] = path.ResolvedMotionRateControlPath(startTr,endTr,t,deltaT);
-
-
-for i=1:size(x)
-    for j=1:size(cubePoints)
-
-        dist = sqrt((cubePoints(1,j)-x(0,i))^2+(cubePoints(1,j)-x(1,i))^2+(cubePoints(3,j)-x(2,i))^2)
-    end
-end
-
+[s,x,steps] = path.ResolvedMotionRateControlPath(startTr,endTr,t,deltaT);
+% 
+% 
+% isCollision = pathCheck(x,cubePoints);
 
 plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
 
+% collision = controller.pathCheck(x , cubePoints)
+
+% controller.obstaclePoints(cubePoints);
+
+controller.runRMRC(startTr, endTr, t, deltaT)
+% controller.runIK(startTr, endTr, t, deltaT)
+
+hold on;
+
 %% Check for collisions between the robot's ellipsoids and the obstacle
-isColliding = collisionHandler.detectCollision(cubePoints);
-if isColliding
-    disp('Collision detected with the obstacle!');
-else
-    disp('No collision detected.');
-end
+% isColliding = collisionHandler.detectCollision(cubePoints);
+% if isColliding
+%     disp('Collision detected with the obstacle!');
+% else
+%     disp('No collision detected.');
+% end
 
-
+% 
+% function isCollision = pathCheck(path, obstaclePoints)
+%     isCollision = false;
+%     for i=1:length(path)
+%         for j=1:size(obstaclePoints)
+%             dist = sqrt((obstaclePoints(j,1)-path(1,i))^2+(obstaclePoints(j,2)-path(2,i))^2+(obstaclePoints(j,3)-path(3,i))^2);
+%             if any(dist < 0.1)
+%                 isCollision = true;
+%                 break;
+%             end
+%         end
+%     end
+% end
