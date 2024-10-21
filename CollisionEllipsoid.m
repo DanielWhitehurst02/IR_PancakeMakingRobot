@@ -20,42 +20,41 @@ classdef CollisionEllipsoid < handle
             % Store current view and axis limits to preserve them
             [az, el] = view;  % Store azimuth and elevation
             originalLimits = axis;  % Store axis limits
-
+        
             % Get current joint positions
             q = obj.robotModel.model.getpos();
             % Compute the transformation matrices for each link
             tr = obj.computeTransforms(q);
-
-            % Loop through each link of the robot and plot ellipsoids
+        
+            % Loop through each link of the robot and update ellipsoids
             for i = 1:length(obj.ellipsoidCenters)
                 % Transform the center of the ellipsoid using the link transformation matrix
                 transformedCenter = tr(:,:,i) * [obj.ellipsoidCenters(i, :), 1]';
                 transformedCenter = transformedCenter(1:3)';  % Extract the transformed x, y, z coordinates
-                
+        
                 % Generate the ellipsoid in the transformed position
                 [X, Y, Z] = obj.generateEllipsoid(transformedCenter, obj.ellipsoidRadii(i, :));
-                
-                % Store the plot handle so it can be updated
-                if length(obj.ellipsoidPlotHandles) < i
+        
+                % If the plot handle already exists, update it, otherwise create a new one
+                if length(obj.ellipsoidPlotHandles) < i || isempty(obj.ellipsoidPlotHandles{i}) || ~isvalid(obj.ellipsoidPlotHandles{i})
                     hold on;
                     obj.ellipsoidPlotHandles{i} = surf(X, Y, Z, 'FaceAlpha', 0.1, 'EdgeColor', 'none');
                 else
-                    % Update existing ellipsoid
+                    % Update existing ellipsoid plot instead of creating a new one
                     set(obj.ellipsoidPlotHandles{i}, 'XData', X, 'YData', Y, 'ZData', Z);
                 end
             end
-            
-            % Restore original view and axis limits
+        
+            % Restore original view and axis limits to avoid changes during animation
             view(az, el);
             axis(originalLimits);
         end
+
         
         % Function to generate an ellipsoid at a specific center and with specific radii
         function [X, Y, Z] = generateEllipsoid(~, center, radii)
             [X, Y, Z] = ellipsoid(center(1), center(2), center(3), radii(1), radii(2), radii(3));
         end
-
-
         
         % Function to check for collisions with an obstacle's mesh points
         function isCollision = detectCollision(obj, obstaclePoints)

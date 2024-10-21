@@ -22,12 +22,12 @@ else
 end
 
 % Define the target transformation matrix
-endTr = transl(0.4, 0.4, 0.3) * troty(-pi/2);  % Example target transformation
-endTr2 = transl(-0.4, -0.4, 0.3) * troty(pi/2)
+endTr = transl(0.4, 0.4, 0.3) * troty(pi/2);  % Example target transformation
+endTr2 = transl(-0.4, -0.4, 0.3)
 % Set the total time and control frequency
 t = 30;  % Total time for movement (in seconds)
 deltaT = 0.05;  % Control step time (in seconds)
 
 % Call the RMRC method to move the UR3
 path.ResolvedMotionRateControl(startTr, endTr, t, deltaT);
-path.ResolvedMotionRateControl(endTr,endTr2,t,deltaT);
+path.ResolvedMotionRateControl(myUR3.model.fkine(myUR3.model.getpos()).T,endTr2,t,deltaT);
