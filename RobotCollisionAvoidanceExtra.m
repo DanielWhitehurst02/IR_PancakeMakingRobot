@@ -34,7 +34,7 @@ collisionPoints = [];   % Store the collision points
 
 for i = 1:5:steps
     % Plot and animate the robot at the current configuration
-    %robot.model.plot(qMatrix(i, :));  
+    robot.model.plot(qMatrix(i, :));  
     robot.model.animate(qMatrix(i, :));  
     
     % Compute transformations for the robot links

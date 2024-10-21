@@ -3,7 +3,7 @@ close all
 clc
 
 robot = UR3(transl(0,0.2,0));
-robot.model.plot(zeros(1,6))
+%robot.model.plot(zeros(1,6))
 % Define the shift value along the x-axis
 shift_x = 0.3;
 hold on

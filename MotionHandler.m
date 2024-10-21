@@ -52,7 +52,7 @@ classdef MotionHandler
                 self.running = false;
         end
 
-        function run(self,obstaclePoints , startTr, endTr, time, deltaT)
+        function runRMRC(self,obstaclePoints , startTr, endTr, time, deltaT)
             
             [s,x,steps] = self.RMRC.ResolvedMotionRateControlPath(startTr, endTr, time, deltaT);
 
@@ -146,6 +146,34 @@ classdef MotionHandler
                 pause(0.01)
             end
         end
+
+
+        function runIK(self, startTr, endTr, steps)
+            % Function to animate a robot's motion between two poses using ikcon and jtraj
+            % Inputs:
+            % - robot: The robot model (e.g., UR3 robot)
+            % - startTr: Start transformation matrix (4x4 matrix)
+            % - endTr: End transformation matrix (4x4 matrix)
+            % - steps: Number of steps for the animation
+        
+            % Initial joint configuration
+            q0 = zeros(1, self.robot.model.n);  % Assuming the robot has n degrees of freedom
+        
+            % Solve for joint configurations at the start and end transformations
+            qStart = self.robot.model.ikcon(startTr, q0);   % Initial pose
+            qEnd = self.robot.model.ikcon(endTr, qStart);   % End pose, starting from qStart
+        
+            % Generate joint trajectory between the start and end configurations
+            qMatrix = jtraj(qStart, qEnd, steps);  % Generate smooth trajectory
+        
+            % Animate the robot following the joint trajectory
+            for i = 1:steps
+                q_current = qMatrix(i, :);  % Current joint configuration
+                self.robot.model.animate(q_current);  % Animate the robot
+                pause(0.05);  % Adjust the pause duration as needed for smooth animation
+            end
+        end
+
 
     end
 end
