@@ -59,7 +59,7 @@ vertex = [vertex; groundVertex];
 faces = [faces; groundFaces + size(vertex,1) - 4];  % Adjust face indices for the ground vertices
 faceNormals = [faceNormals; groundFaceNormals];
 %%
-disp('Want to simulate collision avoidance');
+input('Want to simulate collision avoidance');
 % Call the collision avoidance function
 startTr = transl(0, 0.3, 0.5);
 endTr = transl(0.2, -0.3, 0.5);

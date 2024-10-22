@@ -31,11 +31,12 @@ PlaceObject('SpatulaHolder.ply',[-0.4,0.7,0.52]);
 PlaceObject('spatula.ply',[-0.42,0.52,0.85]);
 PlaceObject('FireExtinguisherElevated.ply',[-1.5,-0.9,0.5]);
 
-
 for position = [-1.67,0.15,-0.15]'
     h = PlaceObject('Table.ply', position');
     verts = [get(h,'Vertices'), ones(size(get(h,'Vertices'),1),1)] * trotz(pi/2);
     set(h,'Vertices',verts(:,1:3))
 end
 
+%%
 robot = UR3(transl(-0.3,0.2,0.5));
+
