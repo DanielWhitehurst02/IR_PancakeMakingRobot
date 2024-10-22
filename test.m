@@ -1,4 +1,5 @@
-% Initialize Robot
+
+%% Initialize Robot
 centerpnt = [2, 0, -0.5];
 robot = UR3e(transl(centerpnt + [-1, 0, +0.5])); % Initialize robot at a specific position
 
