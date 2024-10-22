@@ -1,15 +1,7 @@
 % Load UR3 robot model
 robot = UR3();
-global isSpatulaAttached spatulaHandle spatulaVertices; % Use global variables to maintain state across functions
-isSpatulaAttached = false;  % Initially, the spatula is not attached
 
 hold on; % Ensure we retain all models in the scene
-
-% Load the stove model with the desired transformation
-stoveTransform = transl(-0.5, 0, -0.1); % Adjust the position as needed
-
-% Load the spatula model with the desired transformation
-[spatulaHandle, spatulaVertices] = LoadPLYModel('spatula.ply', transl(-0.3, 0.3, 0.05), 1); % Example position adjustment
 
 % Initialize figure with robot at home position
 %robot.model.plot(zeros(1,6));
@@ -72,8 +64,6 @@ end_T5 = robot.model.fkine(rotated_q6);  % Apply only the q6 rotation for flippi
 
 % Visualize the target positions
 hold on;
-%plot3(start_T(1,4), start_T(2,4), start_T(3,4), 'ro', 'MarkerSize', 10, 'MarkerFaceColor', 'r');
-%plot3(end_T(1,4), end_T(2,4), end_T(3,4), 'go', 'MarkerSize', 10, 'MarkerFaceColor', 'g');
 
 % Control the grippers to open before the first motion
 OpenOrCloseGrippers(leftFinger, rightFinger, 'open', length(t));
@@ -83,9 +73,6 @@ move_robot_with_grippers(robot, leftFinger, rightFinger, spatula_T1, spatula_end
 
 % Close the Grippers (picking up the spatula)
 OpenOrCloseGrippers(leftFinger, rightFinger, 'close', length(t));
-
-% Attach the spatula (after reaching the spatula)
-attach_spatula(spatulaHandle, spatulaVertices);
 
 % Move the spatula to the stove
 move_robot_with_grippers(robot, leftFinger, rightFinger, spatula_T2, spatula_end_T2, t);
@@ -149,30 +136,6 @@ function OpenOrCloseGrippers(leftFinger, rightFinger, action, steps)
     end
 end
 
-%% Loading ply models
-function [plyHandle, vertices] = LoadPLYModel(fileName, transformMatrix, scale)
-    % Load the .ply file
-    disp(['Loading ', fileName, ' model...']);
-    [f, v, data] = plyread(fileName, 'tri'); % Load the specified .ply file
-    vertexColours = [data.vertex.red, data.vertex.green, data.vertex.blue] / 255; % Extract colors
-    
-    % Apply scaling if provided
-    if nargin < 3
-        scale = 1; % Default scaling factor
-    end
-    v = v * scale;
-    
-    % Apply the transformation matrix
-    transformedVertices = [v, ones(size(v, 1), 1)] * transformMatrix';
-    
-    % Plot the model using trisurf
-    plyHandle = trisurf(f, transformedVertices(:, 1), transformedVertices(:, 2), transformedVertices(:, 3), ...
-        'FaceVertexCData', vertexColours, 'EdgeColor', 'none', 'FaceLighting', 'gouraud', ...
-        'AmbientStrength', 0.3, 'FaceAlpha', 1);
-    
-    vertices = v;  % Return the original vertices for future transformation
-    disp([fileName, ' model loaded and displayed.']);
-end
 function move_robot_with_grippers(robot, leftFinger, rightFinger, start_T, end_T, t)
     global isSpatulaAttached spatulaHandle spatulaVertices; % Access global variables
 
@@ -205,29 +168,11 @@ function move_robot_with_grippers(robot, leftFinger, rightFinger, start_T, end_T
     
         leftFinger.model.animate(leftFinger.model.getpos);
         rightFinger.model.animate(rightFinger.model.getpos);
-    
-        % If the spatula is attached, update its position to follow the end-effector
-        if isSpatulaAttached
-            spatulaTr = endEffectorTr.T * transl(0, 0, -0.05) * troty(pi/2);  % Correct transformation application
-            transformedVertices = [spatulaVertices, ones(size(spatulaVertices, 1), 1)] * spatulaTr';
-            set(spatulaHandle, 'Vertices', transformedVertices(:, 1:3));  % Update spatula position
-            drawnow;
-        end
-    
+   
         pause(0.01);  % Small pause for smoother rendering
     end
 end
 
-% Attach the spatula when the robot reaches the spatula's position
-function attach_spatula(spatulaH, spatulaV)
-    global isSpatulaAttached spatulaHandle spatulaVertices; % Access global variables
-    
-    % Set spatula as attached
-    isSpatulaAttached = true;
-    spatulaHandle = spatulaH;
-    spatulaVertices = spatulaV;
-    disp('Spatula attached to the robot.'); % Debug message
-end
 
 
 

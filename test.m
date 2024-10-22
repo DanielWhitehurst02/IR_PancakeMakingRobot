@@ -1,4 +1,6 @@
 robot = UR3e(transl(0, 0, 0));
+leftFinger = Finger();  % Initialize left finger
+rightFinger = Finger2();  % Initialize right finger
 
 centerPoints = [0.0, 0.0, 0.05; % Base 
                 0.0, -0.01, 0.01; % Link 1 
@@ -19,7 +21,7 @@ radii = [0.08, 0.09, 0.055;
 
 hold on
 %%
-center = [-0.5, 0, 0.5];  % Center of the cube
+center = [0.5, 0, 0.5];  % Center of the cube
 rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
 
 % Call meshcube which also calls RectangularPrism and returns all the values
@@ -27,7 +29,7 @@ rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
 
 
 %% Create Motion Handler
-controller = MotionHandler(robot,centerPoints,radii,cubePoints);
+controller = MotionHandlerWithGripper(robot,centerPoints,radii,cubePoints,leftFinger,rightFinger);
 
 %%
 % Set the total time and control frequency
@@ -63,7 +65,7 @@ input('Want to simulate collision avoidance');
 % Call the collision avoidance function
 startTr = transl(0, 0.3, 0.5);
 endTr = transl(0.2, -0.3, 0.5);
-q_start = robot.model.ikine(startTr);
+q_start = robot.model.fkine(robot.model.getpos());
 q_end = robot.model.ikine(endTr);
 centerpnt = [0 0 0];
 runCollisionAvoidance(centerpnt, robot, q_start, q_end, vertex, faces, faceNormals, 100);
