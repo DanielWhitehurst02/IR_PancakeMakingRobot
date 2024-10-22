@@ -11,10 +11,18 @@ function runCollisionAvoidance(centerpnt, robot, q_start, q_end, vertex, faces, 
     if ~isempty(collisionIndices)
         disp('Collisions occurred at the following indices:');
         disp(collisionIndices);
+    
+        % Second Run - Primitive RRT-style Collision Avoidance
+        qMatrixAvoidance = performCollisionAvoidance(robot, q_start, q_end, faces, vertex, faceNormals, steps);
+        robot.model.animate(qMatrixAvoidance);
     else
         disp('No collisions detected.');
+        % No need for collision avoidance, animate the original trajectory
+        robot.model.animate(qMatrix);
+        return;
     end
 
+    
     % Second Run - Primitive RRT-style Collision Avoidance
     qMatrixAvoidance = performCollisionAvoidance(robot, q_start, q_end, faces, vertex, faceNormals, steps);
     robot.model.animate(qMatrixAvoidance);

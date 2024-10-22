@@ -19,7 +19,7 @@ radii = [0.08, 0.09, 0.055;
 
 hold on
 %%
-center = [0.5, 0, 0.5];  % Center of the cube
+center = [-0.5, 0, 0.5];  % Center of the cube
 rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
 
 % Call meshcube which also calls RectangularPrism and returns all the values
@@ -43,10 +43,10 @@ else
     startTr = startTr_struct;    % Directly use if it's already a matrix
 end
 
-startTr = transl(0, 0.45, 0.5);
-endTr = transl(0.3, -0.4, 0.5);  % Example target transformation
+startTr = transl(0, 0.3, 0.5);
+endTr = transl(0.2, -0.3, 0.5);
 
-controller.runRMRC(startTr, endTr, t, deltaT)
+controller.runIK(startTr, endTr, 50)
 
 
 % Define the ground as a large rectangle at Z = -0.1
@@ -61,8 +61,9 @@ faceNormals = [faceNormals; groundFaceNormals];
 %%
 disp('Want to simulate collision avoidance');
 % Call the collision avoidance function
-
-q_start = robot.model.ikcon(startTr);
-q_end = robot.model.ikcon(endTr);
+startTr = transl(0, 0.3, 0.5);
+endTr = transl(0.2, -0.3, 0.5);
+q_start = robot.model.ikine(startTr);
+q_end = robot.model.ikine(endTr);
 centerpnt = [0 0 0];
 runCollisionAvoidance(centerpnt, robot, q_start, q_end, vertex, faces, faceNormals, 100);
