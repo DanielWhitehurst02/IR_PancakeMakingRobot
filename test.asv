@@ -17,37 +17,23 @@ radii = [0.08, 0.09, 0.055;
          0.0, 0.0, 0.0;]; 
 
 
-hold on
-%%
-center = [0.5, 0, 0.5];  % Center of the cube
-rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
 
-% Call meshcube which also calls RectangularPrism and returns all the values
-[cubePoints, vertex, faces, faceNormals] = CollisionMesh(0.5, 0.5, rot, 0.02, center);
 
 
 %% Create Motion Handler
 controller = MotionHandler(robot,centerPoints,radii,cubePoints);
 
 %%
-% Set the total time and control frequency
-t = 5;  % Total time for movement (in seconds)
-deltaT = 0.05;  % Control step time (in seconds
-q0 = zeros(1, robot.model.n);
-
-% Get the current end-effector position using forward kinematics
-startTr_struct = robot.model.fkine(q0);  % Get the forward kinematics
-if isobject(startTr_struct)
-    startTr = startTr_struct.T;  % Extract the .T property if it's an object
-else
-    startTr = startTr_struct;    % Directly use if it's already a matrix
-end
-
-startTr = transl(0, 0.45, 0.5);
-endTr = transl(0.3, -0.4, 0.5);  % Example target transformation
+startTr_struct = robot.model.fkine(q0); 
+endTr = transl(0.3, 0.3, 0.5);  % Example target transformation
 
 controller.runRMRC(startTr, endTr, t, deltaT)
 
+center = [0.5, 0, 0.5];  % Center of the cube
+rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
+
+% Call meshcube which also calls RectangularPrism and returns all the values
+[cubePoints, vertex, face, faceNormals] = meshcube(0.5, 0.5, rot, 0.02, center);
 
 % Define the ground as a large rectangle at Z = -0.1
 groundVertex = [2 -2 -0.1; 2 2 -0.1; -2 2 -0.1; -2 -2 -0.1];
@@ -58,11 +44,7 @@ groundFaceNormals = repmat([0, 0, 1], 2, 1); % Normal pointing upward (Z-axis)
 vertex = [vertex; groundVertex];
 faces = [faces; groundFaces + size(vertex,1) - 4];  % Adjust face indices for the ground vertices
 faceNormals = [faceNormals; groundFaceNormals];
-%%
+
 disp('Want to simulate collision avoidance');
 % Call the collision avoidance function
-
-q_start = robot.model.ikcon(startTr);
-q_end = robot.model.ikcon(endTr);
-centerpnt = [0 0 0];
 runCollisionAvoidance(centerpnt, robot, q_start, q_end, vertex, faces, faceNormals, 100);
