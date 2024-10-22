@@ -27,9 +27,8 @@ rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
 % Call meshcube which also calls RectangularPrism and returns all the values
 [cubePoints, vertex, faces, faceNormals] = CollisionMesh(0.5, 0.5, rot, 0.02, center);
 
-
 %% Create Motion Handler
-controller = MotionHandlerWithGripper(robot,centerPoints,radii,cubePoints,leftFinger,rightFinger);
+controller = MotionHandlerWIthGripperAndObjects(robot,centerPoints,radii,cubePoints,leftFinger,rightFinger);
 
 %%
 % Set the total time and control frequency
@@ -37,7 +36,11 @@ t = 5;  % Total time for movement (in seconds)
 deltaT = 0.05;  % Control step time (in seconds
 q0 = zeros(1, robot.model.n);
 
-% Get the current end-effector position using forward kinematics
+%% Cube or object to pick and drop
+cubeHandle = PlaceObject('BlueSyrupBottle.PLY', [0, 0.3, 0.5]);
+
+
+%% Get the current end-effector position using forward kinematics
 startTr_struct = robot.model.fkine(q0);  % Get the forward kinematics
 if isobject(startTr_struct)
     startTr = startTr_struct.T;  % Extract the .T property if it's an object
@@ -48,8 +51,16 @@ end
 startTr = transl(0, 0.3, 0.5);
 endTr = transl(0.2, -0.3, 0.5);
 
+initial = robot.model.fkine(robot.model.getpos)
+controller.runIK(initial, startTr, 50)
+
+% Pick up the object
+controller.pickObject(cubeHandle);
+
 controller.runIK(startTr, endTr, 50)
 
+% Drop the object
+controller.dropObject();
 
 % Define the ground as a large rectangle at Z = -0.1
 groundVertex = [2 -2 -0.1; 2 2 -0.1; -2 2 -0.1; -2 -2 -0.1];
@@ -60,12 +71,16 @@ groundFaceNormals = repmat([0, 0, 1], 2, 1); % Normal pointing upward (Z-axis)
 vertex = [vertex; groundVertex];
 faces = [faces; groundFaces + size(vertex,1) - 4];  % Adjust face indices for the ground vertices
 faceNormals = [faceNormals; groundFaceNormals];
+
+
+
+
 %%
-input('Want to simulate collision avoidance');
-% Call the collision avoidance function
-startTr = transl(0, 0.3, 0.5);
-endTr = transl(0.2, -0.3, 0.5);
-q_start = robot.model.fkine(robot.model.getpos());
-q_end = robot.model.ikine(endTr);
-centerpnt = [0 0 0];
-runCollisionAvoidance(centerpnt, robot, q_start, q_end, vertex, faces, faceNormals, 100);
+%input('Want to simulate collision avoidance');
+%% Call the collision avoidance function
+%startTr = transl(0, 0.3, 0.5);
+%endTr = transl(0.2, -0.3, 0.5);
+%q_start = robot.model.fkine(robot.model.getpos());
+%q_end = robot.model.ikine(endTr);
+%centerpnt = [0 0 0];
+%runCollisionAvoidance(centerpnt, robot, q_start, q_end, vertex, faces, faceNormals, 100);
