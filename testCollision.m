@@ -3,7 +3,8 @@ clf;
 clear;
 close all;
 
-set(0, 'DefaultFigureWindowStyle', 'docked'); % Dock figures in the workspace
+
+% set(0, 'DefaultFigureWindowStyle', 'docked'); % Dock figures in the workspace
 
 
 %% Define the robot and its ellipsoid centers and radii
@@ -17,7 +18,7 @@ centerPoints = [0.0, 0.0, 0.05; % Base
                 0.0, 0.0, 0.01; % Link 4 
                 0.0, 0.0, 0.06; % Link 5 
                 0.0, 0.0, 0.0;]; % end-effector
-            
+
 radii = [0.08, 0.09, 0.055;  
          0.075, 0.085, 0.075;
          0.175, 0.08, 0.085; 
@@ -28,7 +29,29 @@ radii = [0.08, 0.09, 0.055;
 
 % robot.model.tool
 
-%% Create an instance of the CollisionEllipsoid class
+%% Panda
+robot2 = Panda(transl(-0.5, 0.5, 0));
+
+centerPoints_panda = [
+        -0.025, 0.0, 0.06;
+        0.0, 0.0975, -0.035;
+        0.0, 0.03, 0.075;
+        -0.075, -0.085, 0.0;
+        0.05, 0.0, 0.035;
+        0.0, 0.125, 0.025;
+        -0.05, 0.025, 0.0;
+        ];
+radii_Panda = [
+        0.135, 0.125, 0.075;
+        0.1, 0.175, 0.1;
+        0.125, 0.12, 0.125;
+        0.075, 0.075, 0.095;
+        0.125, 0.125, 0.095;
+        0.085, 0.15, 0.105;
+        0.110, 0.1, 0.085;
+    ];
+% 
+% %% Create an instance of the CollisionEllipsoid class
 collisionHandler = CollisionEllipsoid(robot, centerPoints, radii);
 
 % Draw ellipsoids
@@ -36,16 +59,17 @@ collisionHandler.drawEllipsoids();
 
 % % Create a mesh (obstacle) and plot it
 
+workspace = [-2, 2.5, -2, 2.5, 0, 2];
+axis(workspace)
+center = [1,0,0.5];
+rotation = [pi/3,pi/4,2*pi/7];
 
-
-center = [0.5,0,0.5];
-
-cubePoints = meshcube(0.5,0.5,[pi/3,pi/4,2*pi/7],0.02,center);
+cubePoints = meshcube(0.8,0.2,rotation,0.02,center);
 
 %% Create Motion Handler
 controller = MotionHandler(robot,centerPoints,radii,cubePoints);
 
-
+controller2 = MotionHandler(robot2,centerPoints_panda,radii_Panda,cubePoints);
 
 %% Animate robot with RMRC
 path = RMRC(robot);
@@ -60,7 +84,7 @@ else
 end
 
 % Define the target transformation matrix
-endTr = transl(0.4, 0.4, 0.5);  % Example target transformation
+endTr = transl(0.3, 0.3, 0.5);  % Example target transformation
 
 % Set the total time and control frequency
 t = 5;  % Total time for movement (in seconds)
@@ -80,6 +104,8 @@ plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
 % controller.obstaclePoints(cubePoints);
 
 controller.runRMRC(startTr, endTr, t, deltaT)
+controller2.runRMRC(startTr, endTr, t, deltaT)
+
 % controller.runIK(startTr, endTr, t, deltaT)
 
 
