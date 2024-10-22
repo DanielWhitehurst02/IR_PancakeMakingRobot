@@ -63,6 +63,9 @@ workspace = [-2, 2.5, -2, 2.5, 0, 2];
 axis(workspace)
 center = [1,0,0.5];
 rotation = [pi/3,pi/4,2*pi/7];
+% q0 = zeros(1, robot.model.n);
+% robot.model.getpos
+% robot.model.ikcon(robot.model.fkine(robot.model.getpos), q0)
 
 cubePoints = meshcube(0.8,0.2,rotation,0.02,center);
 
@@ -92,7 +95,7 @@ deltaT = 0.05;  % Control step time (in seconds
  
 % path.ResolvedMotionRateControl(startTr,endTr,t,deltaT);
 
-[s,x,steps] = path.ResolvedMotionRateControlPath(startTr,endTr,t,deltaT);
+[s,x,steps] = path.ResolvedMotionRateControlPath(q0,endTr,t,deltaT);
 % 
 % 
 % isCollision = pathCheck(x,cubePoints);
@@ -103,8 +106,8 @@ plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
 
 % controller.obstaclePoints(cubePoints);
 
-controller.runRMRC(startTr, endTr, t, deltaT)
-controller2.runRMRC(startTr, endTr, t, deltaT)
+controller.runRMRC( endTr, t, deltaT)
+controller2.runRMRC( endTr, t, deltaT)
 
 % controller.runIK(startTr, endTr, t, deltaT)
 

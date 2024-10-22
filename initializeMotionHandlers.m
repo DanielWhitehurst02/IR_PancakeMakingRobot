@@ -19,7 +19,7 @@ function [motionHandler1, motionHandler2] = initializeMotionHandlers()
     PlaceObject('Table.ply', [-1.7, 0.5, -0.15]);
 
     %% UR3 motion Handler
-    robot1 = UR3(transl(-0.3, 0.2, 0.5));
+    robot1 = UR3e(transl(-0.3, 0.2, 0.5));
     centerPoints_UR3 = [
         0.0, 0.0, 0.05;
         0.0, -0.01, 0.01;
@@ -43,6 +43,8 @@ function [motionHandler1, motionHandler2] = initializeMotionHandlers()
 
     %% Panda Motion Handler
     robot2 = Panda(transl(0.5, 0.5, 0.5));
+
+    robot2.CreateModel()
     centerPoints_panda = [
         -0.025, 0.0, 0.06;
         0.0, 0.0975, -0.035;
@@ -61,6 +63,8 @@ function [motionHandler1, motionHandler2] = initializeMotionHandlers()
         0.085, 0.15, 0.105;
         0.110, 0.1, 0.085;
     ];
+
     obstaclePoints2 = [0.05, 0, 0.5];
+
     motionHandler2 = MotionHandler(robot2, centerPoints_panda, radii_Panda, obstaclePoints2);
 end

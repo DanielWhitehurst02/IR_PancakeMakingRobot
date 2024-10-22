@@ -77,7 +77,8 @@ classdef MotionHandler
 
 
             startTr_struct = self.getCurrentEndTr();
-            
+
+            T_current_struct = self.robot.model.fkine(self.RMRC.qMatrix(i,:));
             if isobject(startTr_struct)
                 startTr = startTr_struct.T;
             else
