@@ -34,14 +34,15 @@ classdef Panda < RobotBaseClass
         function CreateModel(self)
             % Define the corrected links using DH parameters for the xArm 6-DOF robot
 
+            link(1) = Link('d', 0.333, 'a', 0, 'alpha', -pi/2, 'qlim', deg2rad([-166.003062 166.003062]), 'offset', 0);
+            link(2) = Link('d', 0, 'a', 0, 'alpha', pi/2, 'qlim', deg2rad([-101.001 101.001]), 'offset', 0);
+            link(3) = Link('d', 0.316, 'a', 0.0825, 'alpha', pi/2, 'qlim', deg2rad([-166.003062 166.003062]), 'offset', 0);
+            link(4) = Link('d', 0, 'a', -0.0825, 'alpha', -pi/2, 'qlim', deg2rad([-176.0011 1.00267]), 'offset', 0);
+            link(5) = Link('d', 0.384, 'a', 0, 'alpha', -pi/2, 'qlim', deg2rad([-166.003062 166.003062]), 'offset', 0);
+            link(6)= Link('d', 0, 'a', 0.088, 'alpha', pi/2, 'qlim', deg2rad([-1.00267 215.0024]), 'offset', 0);
+            link(7)= Link('d', -0.0107, 'a', 0, 'alpha', pi/2, 'qlim', deg2rad([-166.003062 166.003062]), 'offset', 0);
 
-            link(1) = Link([pi   0.333     0       -pi/2   0]);
-            link(2) = Link([0     0        0        pi/2   0]);
-            link(3) = Link([0   0.316    0.0825     pi/2   0]);
-            link(4) = Link([0     0     -0.0825    -pi/2   0]);
-            link(5) = Link([0   0.384      0       -pi/2   0]);
-            link(6) = Link([0     0      0.088      pi/2   0]);
-            link(7) = Link([0  -0.0107     0        pi/2   0]);
+           
     
 
             % Create the robot model
