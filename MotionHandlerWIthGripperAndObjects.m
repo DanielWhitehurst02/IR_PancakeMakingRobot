@@ -12,11 +12,13 @@ classdef MotionHandlerWIthGripperAndObjects
         leftFinger  % Left gripper instance
         rightFinger % Right gripper instance
         grippersPlotted  % Boolean flag to check if grippers are plotted
+        gripperRotation  % Rotation matrix for gripper attachment
+        gripperTranslation  % Translation vector for gripper attachment
     end
 
     methods
         % Constructor
-        function self = MotionHandlerWIthGripperAndObjects(robot, centerPoints, radii, obstaclePoints, leftFinger, rightFinger)
+        function self = MotionHandlerWIthGripperAndObjects(robot, centerPoints, radii, obstaclePoints, leftFinger, rightFinger, varargin)
             self.robot = robot;
             self.obstaclePoints = obstaclePoints;
             self.collisionHandler = CollisionEllipsoid(robot, centerPoints, radii);  % Initialize collision handler
@@ -27,17 +29,31 @@ classdef MotionHandlerWIthGripperAndObjects
             % Initialize the grippers and attach them to the robot
             self.leftFinger = leftFinger;
             self.rightFinger = rightFinger;
+
+            % Set default gripper rotation and translation if not provided
+            if nargin > 6
+                self.gripperRotation = varargin{1};  % Rotation matrix passed as argument
+            else
+                self.gripperRotation = trotx(pi/2);  % Default rotation
+            end
+
+            if nargin > 7
+                self.gripperTranslation = varargin{2};  % Translation vector passed as argument
+            else
+                self.gripperTranslation = transl(0, 0, 0);  % Default no translation
+            end
+
             self.attachGrippersToEndEffector();
         end
-        
+
         % Attach the grippers to the robot's end-effector
         function attachGrippersToEndEffector(self)
             disp('Attaching grippers to the robot...');
             endEffectorTr = self.robot.model.fkine(self.robot.model.getpos);
 
-            % Attach the left and right grippers based on the end-effector transformation
-            self.leftFinger.model.base = endEffectorTr.T * trotx(pi/2);  % Adjusted for orientation
-            self.rightFinger.model.base = endEffectorTr.T * trotx(pi/2);
+            % Apply the user-defined or default rotation and translation
+            self.leftFinger.model.base = endEffectorTr.T * self.gripperRotation * self.gripperTranslation;
+            self.rightFinger.model.base = endEffectorTr.T * self.gripperRotation * self.gripperTranslation;
 
             % Plot the grippers only if they haven't been plotted yet
             if ~self.grippersPlotted
@@ -53,9 +69,9 @@ classdef MotionHandlerWIthGripperAndObjects
         function updateGrippersPosition(self)
             endEffectorTr = self.robot.model.fkine(self.robot.model.getpos);
 
-            % Update the left and right gripper positions based on the new end-effector transformation
-            self.leftFinger.model.base = endEffectorTr.T * trotx(pi/2);
-            self.rightFinger.model.base = endEffectorTr.T * trotx(pi/2);
+            % Update the left and right gripper positions with the stored rotation and translation
+            self.leftFinger.model.base = endEffectorTr.T * self.gripperRotation * self.gripperTranslation;
+            self.rightFinger.model.base = endEffectorTr.T * self.gripperRotation * self.gripperTranslation;
 
             % Animate the grippers to reflect their new positions
             self.leftFinger.model.animate(self.leftFinger.model.getpos);

@@ -31,3 +31,7 @@ deltaT = 0.05;  % Control step time (in seconds)
 % Call the RMRC method to move the UR3
 path.ResolvedMotionRateControl(startTr, endTr, t, deltaT);
 path.ResolvedMotionRateControl(myUR3.model.fkine(myUR3.model.getpos()).T,endTr2,t,deltaT);
+
+start3 = myUR3.model.fkine(myUR3.model.getpos().T);
+end3 = transl(0,0,0.4);
+path.ResolvedMotionRateControl(start3,end3,t,deltaT);
