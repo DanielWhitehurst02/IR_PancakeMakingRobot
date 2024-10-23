@@ -52,9 +52,15 @@ else
 end
 
 startTr = transl(0, 0.3, 0.5);
-endTr = transl(0.2, -0.3, 0.5);
+endTr = transl(0.2, -0.3, 0.5) * troty(-pi/2);
 motionHandler.runRMRC(startTr, endTr,5,0.05,mesh_h,vertices);
-tr = robot.model.fkine(robot.model.getpos());
+
+
+startTr = robot.model.fkine(robot.model.getpos()).T;
+endTr = transl(0, 0.3, 0.5);
+mesh_h = [];
+vertices = [];
+motionHandler.runRMRC(startTr, endTr,5,0.05);
 
 
 motionHandler.OpenOrCloseGrippers('open', steps);
