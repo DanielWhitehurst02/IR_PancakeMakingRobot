@@ -29,8 +29,10 @@ rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
 
 %%
 % Place the object
-mesh_h = PlaceObject('BlueSyrupBottle.PLY',[0, 0.3, 0.5]);
-vertices = get(mesh_h, 'Vertices'); % Get vertices of the pen model
+mesh_h = PlaceObject('BlueSyrupBottle.ply');
+vertices = get(mesh_h, 'Vertices');
+transformedVertices = [vertices, ones(size(vertices, 1), 1)] * transl([0, 0.3, 0.5])';
+set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update object position
 
 %% Create Motion Handler
 % Initialize MotionHandler with grippers
@@ -54,10 +56,7 @@ endTr = transl(0.2, -0.3, 0.5);
 motionHandler.runRMRC(startTr, endTr,5,0.05,mesh_h,vertices);
 tr = robot.model.fkine(robot.model.getpos());
 
-% Transform the vertices of the pen to follow the end-effector
-transformedVertices = [vertices, ones(size(vertices, 1), 1)] * tr.T';
-set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update pen position
-% Open the grippers
+
 motionHandler.OpenOrCloseGrippers('open', steps);
 % Close the grippers
 motionHandler.OpenOrCloseGrippers('close', steps);

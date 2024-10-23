@@ -203,7 +203,7 @@ classdef MotionHandlerWIthGripperAndObjects
                 tr = self.robot.model.fkine(self.robot.model.getpos());
                 transformedVertices = [vertices, ones(size(vertices, 1), 1)] * tr.T';
                 set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update pen position
-    
+                
 
 
                 pause(0.01);  % Adjust pause for smooth animation
@@ -230,8 +230,7 @@ classdef MotionHandlerWIthGripperAndObjects
                 tr = self.robot.model.fkine(self.robot.model.getpos());
                 transformedVertices = [vertices, ones(size(vertices, 1), 1)] * tr.T';
                 set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update pen position
-    
-
+                
                 % Update the grippers' positions to follow the end-effector
                 self.updateGrippersPosition();
                 
