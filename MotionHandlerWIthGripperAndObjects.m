@@ -12,8 +12,6 @@ classdef MotionHandlerWIthGripperAndObjects
         leftFinger  % Left gripper instance
         rightFinger % Right gripper instance
         grippersPlotted  % Boolean flag to check if grippers are plotted
-        pickedObjectHandle % To store the handle of the picked object
-        pickedObjectVertices % To store the original vertices of the picked object
     end
 
     methods
@@ -91,78 +89,6 @@ classdef MotionHandlerWIthGripperAndObjects
             end
         end
 
-        
-
-        % Method to pick up an object and attach it to the robot's end-effector
-        function pickObject(self, objectHandle)
-            disp('Picking up the object...');
-        
-            % Store the object handle and its vertices
-            self.pickedObjectHandle = objectHandle;
-            self.pickedObjectVertices = get(objectHandle, 'Vertices');  % Nx3 vertices
-        
-            % Check if the vertices are Nx3 (should be 3D coordinates)
-            if size(self.pickedObjectVertices, 2) ~= 3
-                error('Object vertices must be Nx3 matrix');
-            end
-        
-            % Get the current transformation of the end-effector
-            endEffectorTr = self.robot.model.fkine(self.robot.model.getpos);
-        
-            % Convert object vertices to Nx4 by adding a column of ones (homogeneous coordinates)
-            homogeneousVertices = [self.pickedObjectVertices, ones(size(self.pickedObjectVertices, 1), 1)];
-        
-            % Align the object’s vertices with the end-effector's position using homogeneous transformation
-            transformedVertices = homogeneousVertices * endEffectorTr.T';  % Apply transformation
-        
-            % Update the object's vertices
-            set(self.pickedObjectHandle, 'Vertices', transformedVertices(:, 1:3));  % Convert back to Nx3
-        
-            disp('Object successfully picked up.');
-        end
-
-        
-        % Method to update the position of the picked object (if any)
-        function updateObjectPosition(self)
-            if ~isempty(self.pickedObjectHandle)
-                % Get the current end-effector transformation
-                endEffectorTr = self.robot.model.fkine(self.robot.model.getpos);
-        
-                % Convert stored vertices to Nx4 for transformation
-                homogeneousVertices = [self.pickedObjectVertices, ones(size(self.pickedObjectVertices, 1), 1)];
-        
-                % Apply the current end-effector transformation to the object vertices
-                transformedVertices = homogeneousVertices * endEffectorTr.T';
-        
-                % Update the object's vertices with the new positions
-                set(self.pickedObjectHandle, 'Vertices', transformedVertices(:, 1:3));  % Set as Nx3
-            end
-        end
-
-
-        % Method to drop the object at the current end-effector position
-        function dropObject(self)
-            if isempty(self.pickedObjectHandle)
-                disp('No object currently attached.');
-                return;
-            end
-        
-            disp('Dropping the object...');
-        
-            % Detach the object by setting its vertices at the current end-effector position
-            currentTr = self.robot.model.fkine(self.robot.model.getpos);
-            transformedVertices = [self.pickedObjectVertices, ones(size(self.pickedObjectVertices, 1), 1)] * currentTr.T';
-            set(self.pickedObjectHandle, 'Vertices', transformedVertices(:, 1:3));
-        
-            % Clear the object handle and vertices
-            self.pickedObjectHandle = [];
-            self.pickedObjectVertices = [];
-        
-            disp('Object successfully dropped.');
-        end
-
-
-
 
         % Update ellipsoid centers dynamically based on current robot configuration
         function updateEllipsoidCenters(self)
@@ -192,18 +118,18 @@ classdef MotionHandlerWIthGripperAndObjects
             self.runRMRC(self.robot.model.fkine(self.robot.model.getpos), self.prevGoal, self.prevtime, self.prevdeltaT);
         end
 
-        % Run RMRC with gripper and object synchronization
-        function runRMRC(self, startTr, endTr, time, deltaT)
+        % Run RMRC with gripper synchronization
+        function runRMRC(self, startTr, endTr, time, deltaT,mesh_h,vertices)
             self.running = true;
             self.currentGoal = endTr;
             self.prevdeltaT = deltaT;
             self.prevtime = time;
-        
+
             [s, ~, steps] = self.RMRC.ResolvedMotionRateControlPath(startTr, endTr, time, deltaT);
-        
+
             epsilon = 0.1;  % Manipulability threshold
             W = diag([1 1 1 0.1 0.1 0.1]);  % Weighting matrix for control
-        
+
             % Perform RMRC loop
             for i = 1:steps-1
                 % Interpolate position and orientation
@@ -211,10 +137,10 @@ classdef MotionHandlerWIthGripperAndObjects
                 q_interp = UnitQuaternion(startTr(1:3,1:3)).interp(UnitQuaternion(endTr(1:3,1:3)), s(i));  % SLERP for orientation
                 R_interp = q_interp.R;
                 R_homogeneous = [R_interp, [0; 0; 0]; 0 0 0 1];  % 4x4 matrix
-        
+
                 % Desired transformation matrix
                 T_desired = pos_interp * R_homogeneous;
-        
+
                 % Get current transformation matrix
                 T_current_struct = self.robot.model.fkine(self.RMRC.qMatrix(i,:));
                 if isobject(T_current_struct)
@@ -222,7 +148,7 @@ classdef MotionHandlerWIthGripperAndObjects
                 else
                     T_current = T_current_struct;
                 end
-        
+                
                 % Compute position and orientation errors
                 deltaX = T_desired(1:3,4) - T_current(1:3,4);
                 Rd = T_desired(1:3, 1:3);
@@ -232,10 +158,10 @@ classdef MotionHandlerWIthGripperAndObjects
                 angular_velocity = [S(3, 2); S(1, 3); S(2, 1)];
                 linear_velocity = (1 / deltaT) * deltaX;
                 xdot = W * [linear_velocity; angular_velocity];  % Compute end-effector velocity
-        
+
                 % Compute the Jacobian
                 J = self.robot.model.jacob0(self.RMRC.qMatrix(i,:));
-        
+
                 % Apply Damped Least Squares (DLS) if necessary
                 self.RMRC.manipulability(i) = sqrt(abs(det(J * J')));
                 if self.RMRC.manipulability(i) < epsilon
@@ -244,10 +170,10 @@ classdef MotionHandlerWIthGripperAndObjects
                     lambda = 0;
                 end
                 invJ = inv(J' * J + lambda * eye(self.robot.model.n)) * J';  % DLS inverse
-        
+
                 % Calculate joint velocities
                 qdot = (invJ * xdot)';
-        
+
                 % Handle joint limits
                 for j = 1:self.robot.model.n
                     if self.RMRC.qMatrix(i,j) + deltaT * qdot(j) < self.robot.model.qlim(j,1)
@@ -256,58 +182,61 @@ classdef MotionHandlerWIthGripperAndObjects
                         qdot(j) = 0;  % Prevent exceeding upper limit
                     end
                 end
-        
+
                 % Update the joint angles
                 self.RMRC.qMatrix(i+1,:) = self.RMRC.qMatrix(i,:) + deltaT * qdot;
-        
+
                 % Check for collisions
                 self.checkForCollisionAndStop();
                 if ~self.running
                     break;  % Stop if a collision is detected
                 end
-        
+
                 % Animate the robot at the new joint configuration
                 self.robot.model.animate(self.RMRC.qMatrix(i+1,:));
                 drawnow();  % Force the figure to update
-        
+
                 % Update the grippers' positions to follow the end-effector
                 self.updateGrippersPosition();
-        
-                % Update the object's position to follow the end-effector
-                self.updateObjectPosition();  % Add this line to move the object with the end-effector
-        
+                
+
+                tr = self.robot.model.fkine(self.robot.model.getpos());
+                transformedVertices = [vertices, ones(size(vertices, 1), 1)] * tr.T';
+                set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update pen position
+    
+
+
                 pause(0.01);  % Adjust pause for smooth animation
             end
         end
 
-
-        % Run inverse kinematics-based motion with gripper and object synchronization
-        function runIK(self, startTr, endTr, steps)
+        % Run inverse kinematics-based motion with gripper synchronization
+        function runIK(self, startTr, endTr, steps,mesh_h,vertices)
             q0 = zeros(1, self.robot.model.n);  % Assuming the robot has n degrees of freedom
             qStart = self.robot.model.ikcon(startTr, q0);  % Initial pose
             qEnd = self.robot.model.ikcon(endTr, qStart);  % End pose
-        
+
             qMatrix = jtraj(qStart, qEnd, steps);  % Generate smooth trajectory
-        
+
             for i = 1:steps
                 q_current = qMatrix(i, :);  % Current joint configuration
                 self.robot.model.animate(q_current);  % Animate the robot
-        
+
                 self.checkForCollisionAndStop();
                 if ~self.running
                     break;  % Stop motion if a collision is detected
                 end
-        
+                
+                tr = self.robot.model.fkine(self.robot.model.getpos());
+                transformedVertices = [vertices, ones(size(vertices, 1), 1)] * tr.T';
+                set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update pen position
+    
+
                 % Update the grippers' positions to follow the end-effector
                 self.updateGrippersPosition();
-        
-                % Update the object's position to follow the end-effector
-                self.updateObjectPosition();  % Add this line to move the object with the end-effector
-        
+                
                 pause(0.05);  % Adjust the pause duration as needed for smooth animation
             end
         end
-
-
     end
 end
