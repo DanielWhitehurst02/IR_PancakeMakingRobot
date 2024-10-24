@@ -14,30 +14,33 @@ classdef MotionHandlerWIthGripperAndObjects
         grippersPlotted  % Boolean flag to check if grippers are plotted
         gripperRotation  % Rotation matrix for gripper attachment
         gripperTranslation  % Translation vector for gripper attachment
+        app % The emergency stop flag passed from the app
     end
 
     methods
         % Constructor
-        function self = MotionHandlerWIthGripperAndObjects(robot, centerPoints, radii, obstaclePoints, leftFinger, rightFinger, varargin)
+        function self = MotionHandlerWIthGripperAndObjects(robot, centerPoints, radii, obstaclePoints, leftFinger, rightFinger,app, varargin)
             self.robot = robot;
             self.obstaclePoints = obstaclePoints;
             self.collisionHandler = CollisionEllipsoid(robot, centerPoints, radii);  % Initialize collision handler
             self.RMRC = RMRC(robot);
             self.running = true;
             self.grippersPlotted = false;  % Initially, grippers are not plotted
+            self.app = app; % Initialize eStop
+
 
             % Initialize the grippers and attach them to the robot
             self.leftFinger = leftFinger;
             self.rightFinger = rightFinger;
 
             % Set default gripper rotation and translation if not provided
-            if nargin > 6
+            if length(varargin) >= 1 && ~isempty(varargin{1})
                 self.gripperRotation = varargin{1};  % Rotation matrix passed as argument
             else
                 self.gripperRotation = trotx(pi/2);  % Default rotation
             end
-
-            if nargin > 7
+            
+            if length(varargin) >= 2 && ~isempty(varargin{2})
                 self.gripperTranslation = varargin{2};  % Translation vector passed as argument
             else
                 self.gripperTranslation = transl(0, 0, 0);  % Default no translation
@@ -112,20 +115,50 @@ classdef MotionHandlerWIthGripperAndObjects
             self.collisionHandler.drawEllipsoids();  % This will update ellipsoid positions based on fkine internally
         end
 
-        % Check for collisions and stop if detected
-        function checkForCollisionAndStop(self)
+        %% Check for collisions and stop if detected
+        %function checkForCollisionAndStop(self)
+        %    self.updateEllipsoidCenters();  % Update ellipsoid positions based on the current robot state
+        %    collision = self.collisionHandler.detectCollision(self.obstaclePoints);  % Check for collisions
+        %    if collision
+        %        disp('Collision detected! Stopping robot.');
+        %        %self.eStop();  % Stop the robot if a collision is detected
+        %    end
+        %end
+
+        % Check for collisions and pause if detected, resume automatically when resolved
+        function checkForCollisionAndPause(self)
             self.updateEllipsoidCenters();  % Update ellipsoid positions based on the current robot state
             collision = self.collisionHandler.detectCollision(self.obstaclePoints);  % Check for collisions
             if collision
-                disp('Collision detected! Stopping robot.');
-                self.eStop();  % Stop the robot if a collision is detected
+                disp('Collision detected! Pausing robot motion...');
+                self.running = false;  % Stop the robot's motion
+        
+                % Pause the loop until the collision is cleared
+                while collision  % Stay in this loop until the collision is cleared
+                    pause(0.1);  % Add a small delay to avoid overloading the system
+                    self.updateEllipsoidCenters();  % Keep updating the ellipsoid centers
+                    collision = self.collisionHandler.detectCollision(self.obstaclePoints);  % Recheck for collisions
+        
+                    if ~collision  % If the collision is cleared
+                        disp('Collision resolved. Resuming robot motion...');
+                        self.running = true;  % Resume robot motion
+                    end
+                end
             end
         end
 
-        % Emergency stop function
-        function eStop(self)
-            self.running = false;  % Stop the robot motion
-            self.prevGoal = self.currentGoal;  % Save the current goal for resuming
+        %% Emergency stop function
+        %function eStop(self)
+        %    self.running = false;  % Stop the robot motion
+        %    self.prevGoal = self.currentGoal;  % Save the current goal for resuming
+        %end
+
+        % Check for eStop and pause if necessary
+        function checkForEStopAndPause(self)
+            while self.app.eStop  % Dynamically check app.eStop value
+                disp('eStop is active, pausing motion...');
+                pause(0.1);  % Small pause while checking for eStop status
+            end
         end
 
         % Resume the robot motion after stopping
@@ -157,6 +190,9 @@ classdef MotionHandlerWIthGripperAndObjects
         
             % Perform RMRC loop
             for i = 1:steps-1
+
+                self.checkForEStopAndPause();  % This will pause the loop if eStop is active
+
                 % Interpolate position and orientation
                 pos_interp = transl((1-s(i))*startTr(1:3,4)' + s(i)*endTr(1:3,4)');
                 q_interp = UnitQuaternion(startTr(1:3,1:3)).interp(UnitQuaternion(endTr(1:3,1:3)), s(i));  % SLERP for orientation
@@ -212,10 +248,7 @@ classdef MotionHandlerWIthGripperAndObjects
                 self.RMRC.qMatrix(i+1,:) = self.RMRC.qMatrix(i,:) + deltaT * qdot;
         
                 % Check for collisions
-                self.checkForCollisionAndStop();
-                if ~self.running
-                    break;  % Stop if a collision is detected
-                end
+                self.checkForCollisionAndPause();
         
                 % Animate the robot at the new joint configuration
                 self.robot.model.animate(self.RMRC.qMatrix(i+1,:));
@@ -254,14 +287,14 @@ classdef MotionHandlerWIthGripperAndObjects
             end
         
             for i = 1:steps
+
+                self.checkForEStopAndPause();  % This will pause the loop if eStop is active
+
                 q_current = qMatrix(i, :);  % Current joint configuration
                 self.robot.model.animate(q_current);  % Animate the robot
         
-                self.checkForCollisionAndStop();
-                if ~self.running
-                    break;  % Stop motion if a collision is detected
-                end
-        
+                self.checkForCollisionAndPause();
+
                 % Update the object (mesh) position if mesh_h and vertices are provided
                 if ~isempty(mesh_h) && ~isempty(vertices)
                     tr = self.robot.model.fkine(self.robot.model.getpos());

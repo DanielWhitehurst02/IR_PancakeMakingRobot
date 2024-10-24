@@ -58,7 +58,7 @@ motionHandler.runRMRC(startTr, endTr,5,0.05,mesh_h,vertices);
 
 startTr = robot.model.fkine(robot.model.getpos()).T;
 endTr = transl(0, 0.3, 0.5);
-motionHandler.runRMRC(startTr, endTr,5,0.05);
+motionHandler.runRMRC(startTr, endTr,t,deltaT);
 
 
 motionHandler.OpenOrCloseGrippers('open', steps);
