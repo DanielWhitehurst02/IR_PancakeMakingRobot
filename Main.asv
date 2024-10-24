@@ -85,15 +85,12 @@ function Main(app)
     %    pause(0.1);  % Adjust the pause duration to control how fast the loop updates
     %end
     
-    %smoothAnimationLoop(app, robot);
-    %velocityControlLoop(app, robot);
-    %setEndEffectorPosition(app, robot);
-    
-    while ~app.isRunning
-        velocityControlLoop(app, robot);
-    end
 
-    
+     while ~app.isRunning
+        smoothAnimationLoop(app, robot);
+        velocityControlLoop(app, robot);
+     end
+
     %% Calling Motion handler
     motionHandler = MotionHandlerWIthGripperAndObjects(robot, centerPoints, radii, cubePoints, leftFinger, rightFinger,app);
     
@@ -115,94 +112,68 @@ function Main(app)
 end
 
 
-
-%% Smooth Joint Angle Animation
 function smoothAnimationLoop(app, robot)
- 
-   % Access the current values of the sliders for joint angles
-   targetJointAngles = [app.ur3_joint1, app.ur3_joint2, app.ur3_joint3, ...
-                        app.ur3_joint4, app.ur3_joint5, app.ur3_joint6];
-  
-   % Get the current joint angles of the robot
-   currentJointAngles = robot.model.getpos();
-  
-   % Number of interpolation steps for smooth animation
-   steps = 5;
-  
-   % Interpolate joint angles between current and target
-   jointTrajectory = zeros(steps, length(targetJointAngles));
-   for i = 1:length(targetJointAngles)
-       jointTrajectory(:, i) = linspace(currentJointAngles(i), targetJointAngles(i), steps);
-   end
-  
-   % Animate the robot smoothly by iterating through the interpolated joint angles
-   for i = 1:steps
-       % Update the robot's pose based on the interpolated joint angles
-       robot.model.animate(jointTrajectory(i, :));
-  
-       % Pause for a short time to allow for smooth updating
-       pause(0.05);  % Adjust the pause duration for smoother animation
-   end
-  
-   % Pause for a short time to allow for the sliders to update values
-   pause(0.1);  % Adjust the pause duration as needed
-end
-
-%% Velocity Control End effector
-function velocityControlLoop(app, robot)
-   % Initialize the velocity gains
-   Kv = 0.2;  % Linear velocity gain
-   Kw = 0.5;  % Angular velocity gain
-   dt = 0.05;  % Time step for updating the simulation
-  
-   % Get linear and angular velocities from the App Designer inputs
-   vx = Kv * app.ur3_velocityX;
-   vy = Kv * app.ur3_velocityY;
-   vz = Kv * app.ur3_velocityZ;
-   wx = Kw * app.ur3_angularX;
-   wy = Kw * app.ur3_angularY;
-   wz = Kw * app.ur3_angularZ;
-   % Create the combined velocity vector (6x1 for linear and angular velocities)
-   dx = [vx; vy; vz; wx; wy; wz];
-  
-   % Get the current joint angles and calculate the Jacobian
-   q = robot.model.getpos();
-   J = robot.model.jacob0(q);
-  
-   % Calculate joint velocities using the Jacobian pseudoinverse
-   dq = pinv(J) * dx;
-  
-   % Update the joint angles based on the velocities
-   q_new = q + dq' * dt;
-  
-   % Animate the robot with the updated joint angles
-   robot.model.animate(q_new);
-  
-   % Pause for a short time before updating again
-   pause(0.05);  % Adjust the pause duration as needed
-  
-end
-
-
-function setEndEffectorPosition(app, robot)
-    % Get the target end-effector position from the App Designer inputs
-    posX = app.ur3_endposX;
-    posY = app.ur3_endposY;
-    posZ = app.ur3_endposZ;
-    
-    % Define the desired transformation matrix using transl (translation)
-    targetTr = transl(posX, posY, posZ);
+   
+    % Access the current values of the sliders for joint angles
+    targetJointAngles = [app.ur3_joint1, app.ur3_joint2, app.ur3_joint3, ...
+                         app.ur3_joint4, app.ur3_joint5, app.ur3_joint6];
     
     % Get the current joint angles of the robot
     currentJointAngles = robot.model.getpos();
     
-    % Use inverse kinematics (ikcon) to compute joint angles for the desired position
-    newJointAngles = robot.model.ikcon(targetTr, currentJointAngles);
+    % Number of interpolation steps for smooth animation
+    steps = 5;
     
-    % Animate the robot to move to the desired position
-    robot.model.animate(newJointAngles);
+    % Interpolate joint angles between current and target
+    jointTrajectory = zeros(steps, length(targetJointAngles));
+    for i = 1:length(targetJointAngles)
+        jointTrajectory(:, i) = linspace(currentJointAngles(i), targetJointAngles(i), steps);
+    end
     
-    % Optional: display the new joint angles (for debugging or display purposes)
-    disp('Updated Joint Angles for Desired End-Effector Position:');
-    disp(newJointAngles);
+    % Animate the robot smoothly by iterating through the interpolated joint angles
+    for i = 1:steps
+        % Update the robot's pose based on the interpolated joint angles
+        robot.model.animate(jointTrajectory(i, :));
+    
+        % Pause for a short time to allow for smooth updating
+        pause(0.05);  % Adjust the pause duration for smoother animation
+    end
+    
+    % Pause for a short time to allow for the sliders to update values
+    pause(0.1);  % Adjust the pause duration as needed
+end
+
+%% Velocity Control End effector
+function velocityControlLoop(app, robot)
+    % Initialize the velocity gains
+    Kv = 0.2;  % Linear velocity gain
+    Kw = 0.5;  % Angular velocity gain
+    dt = 0.05;  % Time step for updating the simulation
+    
+    % Get linear and angular velocities from the App Designer inputs
+    vx = Kv * app.ur3_velocityX;
+    vy = Kv * app.ur3_velocityY;
+    vz = Kv * app.ur3_velocityZ;
+    wx = Kw * app.ur3_angularX;
+    wy = Kw * app.ur3_angularY;
+    wz = Kw * app.ur3_angula
+    % Create the combined velocity vector (6x1 for linear and angular velocities)
+    dx = [vx; vy; vz; wx; wy; wz]; 
+    
+    % Get the current joint angles and calculate the Jacobian
+    q = robot.model.getpos();
+    J = robot.model.jacob0(q);
+    
+    % Calculate joint velocities using the Jacobian pseudoinverse
+    dq = pinv(J) * dx;
+    
+    % Update the joint angles based on the velocities
+    q_new = q + dq' * dt;
+    
+    % Animate the robot with the updated joint angles
+    robot.model.animate(q_new);
+    
+    % Pause for a short time before updating again
+    pause(0.05);  % Adjust the pause duration as needed
+    
 end
