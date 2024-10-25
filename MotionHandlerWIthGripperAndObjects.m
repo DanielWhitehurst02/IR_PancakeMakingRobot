@@ -161,6 +161,18 @@ classdef MotionHandlerWIthGripperAndObjects
             end
         end
 
+
+        %Get current joints
+        function currentpos = getCurrentPos(self)
+            currentpos = self.robot.model.getpos;
+        end
+
+        %Get current end effector transformation
+        function currentendTr = getCurrentEndTr(self)
+            currentendTr = self.robot.model.fkine(self.robot.model.getpos);
+        end
+
+
         % Resume the robot motion after stopping
         function resume(self)
             self.running = true;
@@ -174,7 +186,7 @@ classdef MotionHandlerWIthGripperAndObjects
             self.prevdeltaT = deltaT;
             self.prevtime = time;
         
-            [s, ~, steps] = self.RMRC.ResolvedMotionRateControlPath(startTr, endTr, time, deltaT);
+            [s, ~, steps] = self.RMRC.ResolvedMotionRateControlPath(self.getCurrentPos(), endTr, time, deltaT);
         
             epsilon = 0.1;  % Manipulability threshold
             W = diag([1 1 1 0.1 0.1 0.1]);  % Weighting matrix for control

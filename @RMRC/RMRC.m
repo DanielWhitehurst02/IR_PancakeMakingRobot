@@ -116,7 +116,7 @@ classdef RMRC < handle
 
 
                 % Resolved Motion Rate Control Method
-        function [s,x,steps] = ResolvedMotionRateControlPath(self, startTr, endTr, time, deltaT)
+        function [s,x,steps] = ResolvedMotionRateControlPath(self, pos, endTr, time, deltaT)
 
             % Initialize parameters
             steps = time / deltaT;
@@ -130,7 +130,17 @@ classdef RMRC < handle
             self.manipulability = zeros(steps, 1); % Track manipulability
             
             % Get the initial joint configuration using inverse kinematics
-            self.qMatrix(1,:) = self.robot.model.ikcon(startTr, q0);
+            % self.qMatrix(1,:) = self.robot.model.ikcon(startTr, q0);
+
+            self.qMatrix(1,:) = pos;
+            
+            startTr_struct = self.robot.model.fkine(pos);
+
+            if isobject(startTr_struct)
+                startTr = startTr_struct.T;  % Extract the .T property if it's an object
+            else
+                startTr = startTr_struct;    % Directly use if it's already a matrix
+            end
             
             % % Convert the start and end orientations to quaternions for SLERP
             % R_start = startTr(1:3, 1:3);
@@ -152,7 +162,7 @@ classdef RMRC < handle
         
         %getQmatrix outputs qmatrix
         function qMatrix = getQmatrix()
-            qMatrix = self.qMatrix
+            qMatrix = self.qMatrix;
         end
 
     end
