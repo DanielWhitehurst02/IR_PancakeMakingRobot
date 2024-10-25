@@ -143,7 +143,7 @@ classdef MotionHandlerWIthGripperAndObjects
 
                 end
                   
-                [s, ~] = self.RMRC.ResolvedMotionRateControlPath(startTr, goals{1},steps);
+                [s, ~] = self.RMRC.ResolvedMotionRateControlPath(startTr, goals{1},steps/2);
                 self.qMatrixGoals = s;
 
                 % end
@@ -325,7 +325,8 @@ classdef MotionHandlerWIthGripperAndObjects
             self.prevtime = time;
             goalreached = false;
             
-            endTr = self.goalMat(1);
+            % endTr = self.goalMat(1);
+        endT
 
             startTr_struct = self.getCurrentEndTr();
 

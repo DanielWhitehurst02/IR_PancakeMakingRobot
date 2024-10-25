@@ -116,10 +116,10 @@ classdef RMRC < handle
 
 
                 % Resolved Motion Rate Control Method
-        function [s,x,steps] = ResolvedMotionRateControlPath(self, pos, endTr, time, deltaT)
+        function [s,x] = ResolvedMotionRateControlPath(self, pos, endTr, steps)
 
             % Initialize parameters
-            steps = time / deltaT;
+            % steps = time / deltaT;
             epsilon = 0.1;  % Manipulability threshold
             W = diag([1 1 1 0.1 0.1 0.1]);  % Weighting matrix
 
@@ -133,9 +133,8 @@ classdef RMRC < handle
             % self.qMatrix(1,:) = self.robot.model.ikcon(startTr, q0);
 
             self.qMatrix(1,:) = pos;
-            
-            startTr_struct = self.robot.model.fkine(pos);
 
+            startTr_struct = self.robot.model.fkine(pos);
             if isobject(startTr_struct)
                 startTr = startTr_struct.T;  % Extract the .T property if it's an object
             else

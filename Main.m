@@ -10,6 +10,7 @@ function Main(app)
     
     %%Initialization Robot
     robot = UR3e(transl(0, 0, 0));
+    % robot2 = UR3e(transl(0.5, 0.5, 0));
     leftFinger = Finger();  % Initialize left finger
     rightFinger = Finger2();  % Initialize right finger
     
@@ -28,6 +29,8 @@ function Main(app)
              0.04, 0.055, 0.065;
              0.04, 0.045, 0.125; 
              0.0, 0.0, 0.0;]; 
+    
+    
     
     hold on
     
@@ -66,8 +69,13 @@ function Main(app)
     
     startTr = transl(0, 0.3, 0.5);
     endTr = transl(0.2, -0.3, 0.5) * troty(-pi/2);
-    
+    endTr2 = transl(0.2, -0.3, 0.5) * troty(-pi/2);
 
+    goalMat = {(transl(0.2, -0.3, 0.5) * troty(-pi/2)),
+               (transl(0.3, -0.3, 0.5) * troty(0))}
+    
+    % disp(goalMat{1})
+    disp(size(goalMat,1))
 
 
 
@@ -96,13 +104,22 @@ function Main(app)
     
     %% Calling Motion handler
     motionHandler = MotionHandlerWIthGripperAndObjects(robot, centerPoints, radii, cubePoints, leftFinger, rightFinger,app);
+
+    % motionHandler2 = MotionHandlerWIthGripperAndObjects(robot2, centerPoints, radii, cubePoints, leftFinger, rightFinger,app);
+
+    % motion
     
+    s = motionHandler.setGoals(goalMat,50);
+   
     
+    disp(s{1})
+
     %% Start the simulation loop
+    i = 0;
     while app.isRunning
-       
-        motionHandler.runRMRC(startTr, endTr,5,0.05,mesh_h,vertices);
-        
+       i = i+1;
+        goalreached = motionHandler.iterateRMRC(i,5,0.05,mesh_h,vertices);
+        % disp(goalreached)
 
         % Pause for a short time (simulate delay between iterations)
         pause(0.1);
