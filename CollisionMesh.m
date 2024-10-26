@@ -1,4 +1,4 @@
-function [cubePoints, vertex, face, faceNormals] = CollisionMesh(width, height, rot, density, center)
+function [cubePoints, vertex, face, faceNormals, redHandle] = CollisionMesh(width, height, rot, density, center)
     % Compute half width and half height for the cube
     hwidth = width / 2;
     hheight = height / 2;
@@ -25,16 +25,16 @@ function [cubePoints, vertex, face, faceNormals] = CollisionMesh(width, height, 
     % Transform points based on cube center
     cubePoints = cubePoints + repmat(center, size(cubePoints, 1), 1);
     
-    % Plot the cube's point cloud
-    plot3(cubePoints(:,1), cubePoints(:,2), cubePoints(:,3), 'b.');
+    % Plot the cube's point cloud (only red)
+    redHandle = plot3(cubePoints(:,1), cubePoints(:,2), cubePoints(:,3), 'r*');
 
     % Define plotOptions for the RectangularPrism
-    plotOptions.plotVerts = false;  % Don't plot vertices of the rectangular prism
-    plotOptions.plotEdges = true;   % Plot edges of the rectangular prism
-    plotOptions.plotFaces = false;  % Don't plot faces of the rectangular prism
+    plotOptions.plotVerts = true;  
+    plotOptions.plotEdges = false;  
+    plotOptions.plotFaces = false;  
     
     % Inflate the rectangular prism to encapsulate the cube
-    inflateFactor = 1.05;  % Inflate by 5%
+    inflateFactor = 1.05;  
     inflatedWidth = width * inflateFactor;
     inflatedHeight = height * inflateFactor;
 

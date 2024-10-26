@@ -98,7 +98,7 @@ function Main(app)
     %setEndEffectorPosition(app, robot);
     
     while ~app.isRunning
-        velocityControlLoop(app, robot);
+        velocityControlLoopUR3(app, robot);
     end
 
     
@@ -134,7 +134,7 @@ end
 
 
 %% Smooth Joint Angle Animation
-function smoothAnimationLoop(app, robot)
+function smoothAnimationLoopUR3(app, robot)
  
    % Access the current values of the sliders for joint angles
    targetJointAngles = [app.ur3_joint1, app.ur3_joint2, app.ur3_joint3, ...
@@ -166,7 +166,7 @@ function smoothAnimationLoop(app, robot)
 end
 
 %% Velocity Control End effector
-function velocityControlLoop(app, robot)
+function velocityControlLoopUR3(app, robot)
    % Initialize the velocity gains
    Kv = 0.2;  % Linear velocity gain
    Kw = 0.5;  % Angular velocity gain
@@ -201,7 +201,7 @@ function velocityControlLoop(app, robot)
 end
 
 
-function setEndEffectorPosition(app, robot)
+function setEndEffectorPositionUR3(app, robot)
     % Get the target end-effector position from the App Designer inputs
     posX = app.ur3_endposX;
     posY = app.ur3_endposY;

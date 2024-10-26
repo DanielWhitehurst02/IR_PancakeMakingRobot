@@ -1,68 +1,66 @@
-robot = UR3e(transl(0, 0, 0));
-leftFinger = Finger();  % Initialize left finger
-rightFinger = Finger2();  % Initialize right finger
+function test(app)
+    %% Initialization of the Robot
+    robot1 = UR3e(transl(0, 0, 0));  
 
-centerPoints = [0.0, 0.0, 0.05; % Base 
-                0.0, -0.01, 0.01; % Link 1 
-                0.125, 0.0, 0.125; % Link 2 
-                0.105, 0.0, 0.05; % Link 3 
-                0.0, 0.0, 0.01; % Link 4 
-                0.0, 0.0, 0.06; % Link 5 
-                0.0, 0.0, 0.0;]; % end-effector
+    leftFinger = Finger();  
+    rightFinger = Finger2();
 
-radii = [0.08, 0.09, 0.055;  
-         0.075, 0.085, 0.075;
-         0.175, 0.08, 0.085; 
-         0.15, 0.06, 0.085; 
-         0.04, 0.055, 0.065;
-         0.04, 0.045, 0.125; 
-         0.0, 0.0, 0.0;]; 
+    centerPoints = [0.0, 0.0, 0.05; 
+                    0.0, -0.01, 0.01; 
+                    0.125, 0.0, 0.125; 
+                    0.105, 0.0, 0.05;  
+                    0.0, 0.0, 0.01;  
+                    0.0, 0.0, 0.06;   
+                    0.0, 0.0, 0.0];   
 
-hold on
-%%
-center = [-0.5, 0, 0.5];  % Center of the cube
-rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
+    radii = [0.08, 0.09, 0.055;  
+             0.075, 0.085, 0.075;
+             0.175, 0.08, 0.085; 
+             0.15, 0.06, 0.085; 
+             0.04, 0.055, 0.065;
+             0.04, 0.045, 0.125; 
+             0.0, 0.0, 0.0]; 
 
-% Call meshcube which also calls RectangularPrism and returns all the values
-[cubePoints, vertex, faces, faceNormals] = CollisionMesh(0.5, 0.5, rot, 0.02, center);
+    collisionEllipsoid = CollisionEllipsoidDynamic(robot1, radii);
+    collisionEllipsoid.setObstaclePoints([]); 
+    collisionEllipsoid.ellipsoidCenters = centerPoints;
+    collisionEllipsoid.drawEllipsoids();
 
+    hold on;
+    
+    spawnInterval = 2; 
+    lastToggleTime = tic;  
+    obstacleSpawned = false;  
 
-%%
-% Place the object
-mesh_h = PlaceObject('BlueSyrupBottle.ply');
-vertices = get(mesh_h, 'Vertices');
-transformedVertices = [vertices, ones(size(vertices, 1), 1)] * transl([0, 0.3, 0.5])';
-set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update object position
+    center = [-0.5, 0, 0.5];
+    rot = [pi/3, pi/4, 2*pi/7];
 
-%% Create Motion Handler
-% Initialize MotionHandler with grippers
-motionHandler = MotionHandlerWIthGripperAndObjects(robot, centerPoints, radii, cubePoints, leftFinger, rightFinger);
+    redHandle = [];  % Plot handle for red points
 
-% Set the total time and control frequency
-t = 5;  % Total time for movement (in seconds)
-deltaT = 0.05;  % Control step time (in seconds
-q0 = zeros(1, robot.model.n);
-steps = 50;
-% Get the current end-effector position using forward kinematics
-startTr_struct = robot.model.fkine(q0);  % Get the forward kinematics
-if isobject(startTr_struct)
-    startTr = startTr_struct.T;  % Extract the .T property if it's an object
-else
-    startTr = startTr_struct;    % Directly use if it's already a matrix
+    while true
+        if toc(lastToggleTime) > spawnInterval
+            lastToggleTime = tic;  
+
+            if obstacleSpawned
+                % Despawn obstacle
+                collisionEllipsoid.setObstaclePoints([]);
+                if isgraphics(redHandle), delete(redHandle); end
+                redHandle = [];
+                obstacleSpawned = false;
+            else
+                % Spawn new obstacle
+                [cubePoints, ~, ~, ~, redHandle] = CollisionMesh(0.5, 0.5, rot, 0.02, center);
+                collisionEllipsoid.setObstaclePoints(cubePoints);
+                obstacleSpawned = true;
+            end
+        end
+
+        if obstacleSpawned && collisionEllipsoid.detectCollision()
+            disp('Collision detected with dynamically spawned obstacle!');
+        else
+            disp('No collision')
+        end
+        
+        pause(0.1);
+    end
 end
-
-startTr = transl(0, 0.3, 0.5);
-endTr = transl(0.2, -0.3, 0.5) * troty(-pi/2);
-motionHandler.runRMRC(startTr, endTr,5,0.05,mesh_h,vertices);
-
-
-startTr = robot.model.fkine(robot.model.getpos()).T;
-endTr = transl(0, 0.3, 0.5);
-motionHandler.runRMRC(startTr, endTr,t,deltaT);
-
-
-motionHandler.OpenOrCloseGrippers('open', steps);
-% Close the grippers
-motionHandler.OpenOrCloseGrippers('close', steps);
-
-
