@@ -28,7 +28,29 @@ function Main(app)
              0.15, 0.06, 0.085; 
              0.04, 0.055, 0.065;
              0.04, 0.045, 0.125; 
-             0.0, 0.0, 0.0;]; 
+             0.0, 0.0, 0.0;];
+
+    robot2 = Panda(transl(0.5, 0.5, 0));
+
+    robot2.CreateModel()
+    centerPoints_panda = [
+        -0.025, 0.0, 0.06;
+        0.0, 0.0975, -0.035;
+        0.0, 0.03, 0.075;
+        -0.075, -0.085, 0.0;
+        0.05, 0.0, 0.035;
+        0.0, 0.125, 0.025;
+        -0.05, 0.025, 0.0;
+    ];
+    radii_Panda = [
+        0.135, 0.125, 0.075;
+        0.1, 0.175, 0.1;
+        0.125, 0.12, 0.125;
+        0.075, 0.075, 0.095;
+        0.125, 0.125, 0.095;
+        0.085, 0.15, 0.105;
+        0.110, 0.1, 0.085;
+    ];
     
     
     
@@ -69,13 +91,18 @@ function Main(app)
     
     startTr = transl(0, 0.3, 0.5);
     endTr = transl(0.2, -0.3, 0.5) * troty(-pi/2);
-    endTr2 = transl(0.2, -0.3, 0.5) * troty(-pi/2);
+    endTr2 = transl(-0.3, -0.3, 0.5) * troty(-pi/2);
 
-    goalMat = {(transl(0.2, -0.3, 0.5) * troty(-pi/2)),
-               (transl(0.3, -0.3, 0.5) * troty(0))}
+    endTr3 = transl(0.2, 0.6, 0.5) * troty(-pi/2);
+    endTr4 = transl(-0.3, 0.6, 0.5) * troty(-pi/2);
+
+    % goalMat = {(transl(0.2, -0.3, 0.5) * troty(-pi/2)),
+               % (transl(0.3, -0.3, 0.5) * troty(0))}
+     goalMat = {endTr,
+                endTr2}
     
-    % disp(goalMat{1})
-    disp(size(goalMat,1))
+    disp(goalMat{1})
+    %disp(size(goalMat,1))
 
 
 
@@ -109,18 +136,22 @@ function Main(app)
 
     % motion
     
-    s = motionHandler.setGoals(goalMat,50);
+    % s = motionHandler.setGoals(goalMat,50);
    
     
-    disp(s{1})
+    % disp(s{1})
 
     %% Start the simulation loop
     i = 0;
     while app.isRunning
        i = i+1;
-        goalreached = motionHandler.iterateRMRC(i,5,0.05,mesh_h,vertices);
+       % goalreached = motionHandler.iterateRMRC(i,endTr,5,0.05,mesh_h,vertices);
+       % motionHandler.runRMRC(startTr,endTr,5,0.05,mes)
+        % motionHandler.runRMRC( endTr,5,0.05,mesh_h,vertices);
+        motionHandler.runtwoRMRC(robot2,endTr,endTr3,5,0.05,mesh_h,vertices);
         % disp(goalreached)
-
+        pause(0.1)
+        motionHandler.runtwoRMRC(robot2,endTr2,endTr4,5,0.05,mesh_h,vertices);
         % Pause for a short time (simulate delay between iterations)
         pause(0.1);
         hold on;

@@ -129,6 +129,8 @@ classdef RMRC < handle
             self.angleError = zeros(3, steps);     % Track orientation errors
             self.manipulability = zeros(steps, 1); % Track manipulability
             
+      
+
             % Get the initial joint configuration using inverse kinematics
             % self.qMatrix(1,:) = self.robot.model.ikcon(startTr, q0);
 
@@ -140,7 +142,10 @@ classdef RMRC < handle
             else
                 startTr = startTr_struct;    % Directly use if it's already a matrix
             end
-            
+            % 
+            % 
+            % self.qMatrix(1,:) = self.robot.model.ikcon(startTr, q0);
+
             % % Convert the start and end orientations to quaternions for SLERP
             % R_start = startTr(1:3, 1:3);
             % R_end = endTr(1:3, 1:3);

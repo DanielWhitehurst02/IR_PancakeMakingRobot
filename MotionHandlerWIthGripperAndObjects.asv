@@ -143,7 +143,7 @@ classdef MotionHandlerWIthGripperAndObjects
 
                 end
                   
-                [s, ~] = self.RMRC.ResolvedMotionRateControlPath(startTr, goals{1},steps/2);
+                [s, ~] = self.RMRC.ResolvedMotionRateControlPath(startTr, goals{1},steps);
                 self.qMatrixGoals = s;
 
                 % end
@@ -218,13 +218,25 @@ classdef MotionHandlerWIthGripperAndObjects
         end
 
         % Run RMRC with gripper synchronization
-        function runRMRC(self, startTr, endTr, time, deltaT, varargin)
+        function runRMRC(self, endTr, time, deltaT, varargin)
             self.running = true;
             self.currentGoal = endTr;
             self.prevdeltaT = deltaT;
             self.prevtime = time;
         
-            [s, ~, steps] = self.RMRC.ResolvedMotionRateControlPath(self.getCurrentPos(), endTr, time, deltaT);
+            steps = time/deltaT;
+
+
+            startTr_struct = self.getCurrentEndTr();
+
+            if isobject(startTr_struct)
+                startTr = startTr_struct.T;
+            else
+                startTr = startTr_struct;
+            end
+
+
+            [s, ~] = self.RMRC.ResolvedMotionRateControlPath(self.getCurrentPos(), endTr, steps);
         
             epsilon = 0.1;  % Manipulability threshold
             W = diag([1 1 1 0.1 0.1 0.1]);  % Weighting matrix for control
@@ -318,40 +330,19 @@ classdef MotionHandlerWIthGripperAndObjects
             end
         end
 
-        function [goalreached] = iterateRMRC(self, j, time, deltaT, varargin)
+        function runtwoRMRC(self, robot2, endTr1,endTr2, time, deltaT, varargin)
             self.running = true;
-            % self.currentGoal = endTr;
+            self.currentGoal = endTr;
             self.prevdeltaT = deltaT;
             self.prevtime = time;
-            goalreached = false;
-            
-            % endTr = self.goalMat(1);
-        endT
 
-            startTr_struct = self.getCurrentEndTr();
+            steps = time/deltaT;
 
-            if isobject(startTr_struct)
-                startTr = startTr_struct.T;
-            else
-                startTr = startTr_struct;
-            end
+            thisRMRC = RMRC(robot2)
 
-            steps = self.steps;
-            
-            % if self.newgoal
-            % [s, ~, steps] = self.RMRC.ResolvedMotionRateControlPath(self.getCurrentPos(), endTr, time, deltaT);
-            %     self.newgoal = false;
-            % end
-        
-            s = self.qMatrixGoals;
+            [s1, ~] = self.RMRC.ResolvedMotionRateControlPath(self.getCurrentPos(), endTr, steps);
+            [s2, ~] = thisRMRC.ResolvedMotionRateControlPath(robot2.model.getpos, endTr2, steps);
 
-            if j > steps
-                i = steps;
-                goalreached = true;
-            else
-                i = j;
-            end
-             
             epsilon = 0.1;  % Manipulability threshold
             W = diag([1 1 1 0.1 0.1 0.1]);  % Weighting matrix for control
         
@@ -364,95 +355,293 @@ classdef MotionHandlerWIthGripperAndObjects
                 vertices = [];
             end
 
-            self.checkForEStopAndPause();  % This will pause the loop if eStop is active
+            startTr_struct = self.getCurrentEndTr();
 
-            % Interpolate position and orientation
-            pos_interp = transl((1-s(i))*startTr(1:3,4)' + s(i)*endTr(1:3,4)');
-            q_interp = UnitQuaternion(startTr(1:3,1:3)).interp(UnitQuaternion(endTr(1:3,1:3)), s(i));  % SLERP for orientation
-            R_interp = q_interp.R;
-            R_homogeneous = [R_interp, [0; 0; 0]; 0 0 0 1];  % 4x4 matrix
-    
-            % Desired transformation matrix
-            T_desired = pos_interp * R_homogeneous;
-    
-            % Get current transformation matrix
-            T_current_struct = self.robot.model.fkine(self.RMRC.qMatrix(i,:));
-            if isobject(T_current_struct)
-                T_current = T_current_struct.T;
+            if isobject(startTr_struct)
+                startTr1 = startTr_struct.T;
             else
-                T_current = T_current_struct;
+                startTr1 = startTr_struct;
             end
-    
-            % if T_current - self.currentGoal(self.goalIndex) < 0.05
-            %     goalreached = true;
-            % else
-            %     goalreached = false;
-            % end
-            % 
-            % if T_current - endTr < 0.05
-            %     goalreached = true;
-            %      curr = T_current;
-            % else
-            %     goalreached = false;
-            %      curr = T_current;
-            % end
 
-            % Compute position and orientation errors
-            deltaX = T_desired(1:3,4) - T_current(1:3,4);
-            Rd = T_desired(1:3, 1:3);
-            Ra = T_current(1:3, 1:3);
-            Rdot = (1 / deltaT) * (Rd - Ra);
-            S = Rdot * Ra';
-            angular_velocity = [S(3, 2); S(1, 3); S(2, 1)];
-            linear_velocity = (1 / deltaT) * deltaX;
-            xdot = W * [linear_velocity; angular_velocity];  % Compute end-effector velocity
-    
-            % Compute the Jacobian
-            J = self.robot.model.jacob0(self.RMRC.qMatrix(i,:));
-    
-            % Apply Damped Least Squares (DLS) if necessary
-            self.RMRC.manipulability(i) = sqrt(abs(det(J * J')));
-            if self.RMRC.manipulability(i) < epsilon
-                lambda = (1 - self.RMRC.manipulability(i) / epsilon) * 5E-2;
+
+            startTr_struct2 = robot2.model.fkine(robot2.model.getpos);
+
+            if isobject(startTr_struct2)
+                startTr2 = startTr_struct2.T;
             else
-                lambda = 0;
-            end
-            invJ = inv(J' * J + lambda * eye(self.robot.model.n)) * J';  % DLS inverse
-    
-            % Calculate joint velocities
-            qdot = (invJ * xdot)';
-    
-            % Handle joint limits
-            for j = 1:self.robot.model.n
-                if self.RMRC.qMatrix(i,j) + deltaT * qdot(j) < self.robot.model.qlim(j,1)
-                    qdot(j) = 0;  % Prevent exceeding lower limit
-                elseif self.RMRC.qMatrix(i,j) + deltaT * qdot(j) > self.robot.model.qlim(j,2)
-                    qdot(j) = 0;  % Prevent exceeding upper limit
-                end
-            end
-    
-            % Update the joint angles
-            self.RMRC.qMatrix(i+1,:) = self.RMRC.qMatrix(i,:) + deltaT * qdot;
-    
-            % Check for collisions
-            self.checkForCollisionAndPause();
-    
-            % Animate the robot at the new joint configuration
-            self.robot.model.animate(self.RMRC.qMatrix(i+1,:));
-            drawnow();  % Force the figure to update
-    
-            % Update the grippers' positions to follow the end-effector
-            self.updateGrippersPosition();
-    
-            % Update the object (mesh) position if mesh_h and vertices are provided
-            if ~isempty(mesh_h) && ~isempty(vertices)
-                tr = self.robot.model.fkine(self.robot.model.getpos());
-                transformedVertices = [vertices, ones(size(vertices, 1), 1)] * tr.T';
-                set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update mesh position
+                startTr2 = startTr_struct2;
             end
         
-        end
+            % Perform RMRC loop
+            for i = 1:steps-1
 
+                self.checkForEStopAndPause();  % This will pause the loop if eStop is active
+
+                % Interpolate position and orientation
+                pos_interp1 = transl((1-s1(i))*startTr1(1:3,4)' + s1(i)*endTr1(1:3,4)');
+                pos_interp2 = transl((1-s2(i))*startTr2(1:3,4)' + s2(i)*endTr1(1:3,4)');
+
+                q_interp1 = UnitQuaternion(startTr1(1:3,1:3)).interp(UnitQuaternion(endTr1(1:3,1:3)), s1(i));  % SLERP for orientation
+                q_interp2 = UnitQuaternion(startTr2(1:3,1:3)).interp(UnitQuaternion(endTr2(1:3,1:3)), s2(i));  % SLERP for orientation
+
+                R_interp1 = q_interp1.R;
+                R_interp2 = q_interp2.R;
+
+                R_homogeneous1 = [R_interp1, [0; 0; 0]; 0 0 0 1];  % 4x4 matrix
+                R_homogeneous2 = [R_interp2, [0; 0; 0]; 0 0 0 1];  % 4x4 matrix
+        
+                % Desired transformation matrix
+                T_desired1 = pos_interp1 * R_homogeneous1;
+                T_desired2 = pos_interp2 * R_homogeneous2;
+        
+                % Get current transformation matrix
+                T_current_struct1 = self.robot.model.fkine(self.RMRC.qMatrix(i,:));
+                T_current_struct2 = robot2.model.fkine(robot2.model.getpos);
+
+                if isobject(T_current_struct1)
+                    T_current1 = T_current_struct1.T;
+                else
+                    T_current1 = T_current_struct1;
+                end
+        
+                if isobject(T_current_struct2)
+                    T_current2 = T_current_struct2.T;
+                else
+                    T_current2 = T_current_struct2;
+                end
+
+                % Compute position and orientation errors
+                deltaX1 = T_desired1(1:3,4) - T_current1(1:3,4);
+                deltaX2 = T_desired2(1:3,4) - T_current2(1:3,4);
+
+                Rd1 = T_desired1(1:3, 1:3);
+                Rd2 = T_desired2(1:3, 1:3);
+
+                Ra1 = T_current1(1:3, 1:3);
+                Ra2 = T_current2(1:3, 1:3);
+
+                Rdot1 = (1 / deltaT1) * (Rd1 - Ra1);
+                Rdot2 = (1 / deltaT2) * (Rd2 - Ra2);
+
+                S1 = Rdot1 * Ra1';
+                S2 = Rdot2 * Ra2';
+
+                angular_velocity1 = [S1(3, 2); S1(1, 3); S1(2, 1)];
+                angular_velocity2 = [S2(3, 2); S2(1, 3); S2(2, 1)];
+
+                linear_velocity1 = (1 / deltaT) * deltaX1;
+                linear_velocity2 = (1 / deltaT) * deltaX2;
+                
+                xdot1 = W1 * [linear_velocity1; angular_velocity1];  % Compute end-effector velocity
+                xdot2 = W2 * [linear_velocity2; angular_velocity2];  % Compute end-effector velocity
+        
+                % Compute the Jacobian
+                J1 = self.robot.model.jacob0(self.RMRC.qMatrix(i,:));
+                J2 = robot2.model.jacob0(robot2.model.getpos);
+        
+                % Apply Damped Least Squares (DLS) if necessary
+                self.RMRC.manipulability(i) = sqrt(abs(det(J1 * J1')));
+                if self.RMRC.manipulability(i) < epsilon
+                    lambda1 = (1 - self.RMRC.manipulability(i) / epsilon) * 5E-2;
+                else
+                    lambda1 = 0;
+                end
+
+                thisRMRC.manipulability(i) = sqrt(abs(det(J2 * J2')));
+                if thisRMRC.manipulability(i) < epsilon
+                    lambda2 = (1 - thisRMRC.manipulability(i) / epsilon) * 5E-2;
+                else
+                    lambda2 = 0;
+                end
+
+                invJ1 = inv(J1' * J1 + lambda1 * eye(self.robot.model.n)) * J1';  % DLS inverse
+                invJ2 = inv(J2' * J2 + lambda2 * eye(robot2.model.n)) * J2';  % DLS inverse
+        
+                % Calculate joint velocities
+                qdot1 = (invJ1 * xdot1)';
+                qdot2 = (invJ2 * xdot2)';
+        
+                % Handle joint limits
+                for j = 1:self.robot.model.n
+                    if self.RMRC.qMatrix(i,j) + deltaT * qdot1(j) < self.robot.model.qlim(j,1)
+                        qdot1(j) = 0;  % Prevent exceeding lower limit
+                    elseif self.RMRC.qMatrix(i,j) + deltaT * qdot1(j) > self.robot.model.qlim(j,2)
+                        qdot1(j) = 0;  % Prevent exceeding upper limit
+                    end
+                end
+
+                for j = 1:robot2.model.n
+                    if thisRMRC.qMatrix(i,j) + deltaT2 * qdot2(j) < self.robot.model.qlim(j,1)
+                        qdot(j) = 0;  % Prevent exceeding lower limit
+                    elseif self.RMRC.qMatrix(i,j) + deltaT * qdot2(j) > self.robot.model.qlim(j,2)
+                        qdot(j) = 0;  % Prevent exceeding upper limit
+                    end
+                end
+        
+                % Update the joint angles
+                self.RMRC.qMatrix(i+1,:) = self.RMRC.qMatrix(i,:) + deltaT * qdot;
+        
+                % Check for collisions
+                self.checkForCollisionAndPause();
+        
+                % Animate the robot at the new joint configuration
+                self.robot.model.animate(self.RMRC.qMatrix(i+1,:));
+                drawnow();  % Force the figure to update
+        
+                % Update the grippers' positions to follow the end-effector
+                self.updateGrippersPosition();
+        
+                % Update the object (mesh) position if mesh_h and vertices are provided
+                if ~isempty(mesh_h) && ~isempty(vertices)
+                    tr = self.robot.model.fkine(self.robot.model.getpos());
+                    transformedVertices = [vertices, ones(size(vertices, 1), 1)] * tr.T';
+                    set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update mesh position
+                end
+        
+                pause(0.01);  % Adjust pause for smooth animation
+            end
+        end
+        
+        % function [goalreached, endTr] = iterateRMRC(self, goalMat, j, time, deltaT, varargin)
+        %     self.running = true;
+        %     % self.currentGoal = endTr;
+        %     self.prevdeltaT = deltaT;
+        %     self.prevtime = time;
+        %     goalreached = false;
+        % 
+        %     % endTr = goalMat;
+        % 
+        % 
+        % 
+        %     endTr = transl(0.2, -0.3, 0.5) * troty(-pi/2);
+        % 
+        %     startTr_struct = self.getCurrentEndTr();
+        % 
+        %     if isobject(startTr_struct)
+        %         startTr = startTr_struct.T;
+        %     else
+        %         startTr = startTr_struct;
+        %     end
+        % 
+        %     % steps = self.steps;
+        %     steps = 50;
+        %     % steps = time/deltaT;
+        % 
+        %     % if self.newgoal
+        %     [s, ~] = self.RMRC.ResolvedMotionRateControlPath(self.getCurrentPos(), endTr, steps);
+        %     %     self.newgoal = false;
+        %     % end
+        % 
+        %     % s = self.qMatrixGoals;
+        % 
+        %     if j > steps
+        %         i = steps;
+        %         goalreached = true;
+        %     else
+        %         i = j;
+        %     end
+        % 
+        %     epsilon = 0.1;  % Manipulability threshold
+        %     W = diag([1 1 1 0.1 0.1 0.1]);  % Weighting matrix for control
+        % 
+        %     % Check if mesh_h and vertices were provided
+        %     if nargin > 5
+        %         mesh_h = varargin{1};
+        %         vertices = varargin{2};
+        %     else
+        %         mesh_h = [];
+        %         vertices = [];
+        %     end
+        % 
+        %     self.checkForEStopAndPause();  % This will pause the loop if eStop is active
+        % 
+        %     % Interpolate position and orientation
+        %     pos_interp = transl((1-s(i))*startTr(1:3,4)' + s(i)*endTr(1:3,4)');
+        %     q_interp = UnitQuaternion(startTr(1:3,1:3)).interp(UnitQuaternion(endTr(1:3,1:3)), s(i));  % SLERP for orientation
+        %     R_interp = q_interp.R;
+        %     R_homogeneous = [R_interp, [0; 0; 0]; 0 0 0 1];  % 4x4 matrix
+        % 
+        %     % Desired transformation matrix
+        %     T_desired = pos_interp * R_homogeneous;
+        % 
+        %     % Get current transformation matrix
+        %     T_current_struct = self.robot.model.fkine(self.RMRC.qMatrix(i,:));
+        %     if isobject(T_current_struct)
+        %         T_current = T_current_struct.T;
+        %     else
+        %         T_current = T_current_struct;
+        %     end
+        % 
+        %     % if T_current - self.currentGoal(self.goalIndex) < 0.05
+        %     %     goalreached = true;
+        %     % else
+        %     %     goalreached = false;
+        %     % end
+        %     % 
+        %     % if T_current - endTr < 0.05
+        %     %     goalreached = true;
+        %     %      curr = T_current;
+        %     % else
+        %     %     goalreached = false;
+        %     %      curr = T_current;
+        %     % end
+        % 
+        %     % Compute position and orientation errors
+        %     deltaX = T_desired(1:3,4) - T_current(1:3,4);
+        %     Rd = T_desired(1:3, 1:3);
+        %     Ra = T_current(1:3, 1:3);
+        %     Rdot = (1 / deltaT) * (Rd - Ra);
+        %     S = Rdot * Ra';
+        %     angular_velocity = [S(3, 2); S(1, 3); S(2, 1)];
+        %     linear_velocity = (1 / deltaT) * deltaX;
+        %     xdot = W * [linear_velocity; angular_velocity];  % Compute end-effector velocity
+        % 
+        %     % Compute the Jacobian
+        %     J = self.robot.model.jacob0(self.RMRC.qMatrix(i,:));
+        % 
+        %     % Apply Damped Least Squares (DLS) if necessary
+        %     self.RMRC.manipulability(i) = sqrt(abs(det(J * J')));
+        %     if self.RMRC.manipulability(i) < epsilon
+        %         lambda = (1 - self.RMRC.manipulability(i) / epsilon) * 5E-2;
+        %     else
+        %         lambda = 0;
+        %     end
+        %     invJ = inv(J' * J + lambda * eye(self.robot.model.n)) * J';  % DLS inverse
+        % 
+        %     % Calculate joint velocities
+        %     qdot = (invJ * xdot)';
+        % 
+        %     % Handle joint limits
+        %     for j = 1:self.robot.model.n
+        %         if self.RMRC.qMatrix(i,j) + deltaT * qdot(j) < self.robot.model.qlim(j,1)
+        %             qdot(j) = 0;  % Prevent exceeding lower limit
+        %         elseif self.RMRC.qMatrix(i,j) + deltaT * qdot(j) > self.robot.model.qlim(j,2)
+        %             qdot(j) = 0;  % Prevent exceeding upper limit
+        %         end
+        %     end
+        % 
+        %     % Update the joint angles
+        %     self.RMRC.qMatrix(i+1,:) = self.RMRC.qMatrix(i,:) + deltaT * qdot;
+        % 
+        %     % Check for collisions
+        %     self.checkForCollisionAndPause();
+        % 
+        %     % Animate the robot at the new joint configuration
+        %     self.robot.model.animate(self.RMRC.qMatrix(i+1,:));
+        %     drawnow();  % Force the figure to update
+        % 
+        %     % Update the grippers' positions to follow the end-effector
+        %     self.updateGrippersPosition();
+        % 
+        %     % Update the object (mesh) position if mesh_h and vertices are provided
+        %     if ~isempty(mesh_h) && ~isempty(vertices)
+        %         tr = self.robot.model.fkine(self.robot.model.getpos());
+        %         transformedVertices = [vertices, ones(size(vertices, 1), 1)] * tr.T';
+        %         set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update mesh position
+        %     end
+        % 
+        % end
+        % 
 
         % Run inverse kinematics-based motion with gripper synchronization
         function runIK(self, startTr, endTr, steps, varargin)
@@ -493,13 +682,13 @@ classdef MotionHandlerWIthGripperAndObjects
                 pause(0.05);  % Adjust the pause duration as needed for smooth animation
             end
         end
-
-        function complete = iterateGoals(self, i)
-            self.goalIndex
-
-
-
-            % complete = 
-        end
+        % 
+        % function complete = iterateGoals(self, i)
+        %     self.goalIndex
+        % 
+        % 
+        % 
+        %     % complete = 
+        % end
     end
 end
