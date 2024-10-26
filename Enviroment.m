@@ -64,7 +64,7 @@ PlaceObject('tableBrown2.1x1.4x0.5m.ply',[0.7,0.78,0]);
 PlaceObject('SpatulaHolder.ply',[-0.4,0.7,0.52]);
 PlaceObject('FireExtinguisherElevated.ply',[-1.5,-0.95,0.5]);
 PlaceObject('Plate.ply', [-0.3, -0.33, 0.565]);
-
+PlaceObject('emergencyStopButton.ply',[0,-1.7,0]);
 PlaceObject('glass1.ply', [2.12,1.85,1.8]);
 PlaceObject('glass2.ply', [-1.9,1.85,1.8]);
 PlaceObject('glass3.ply', [2.1,1.85,1.8]);
