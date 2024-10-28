@@ -26,7 +26,8 @@ classdef MotionHandlerWIthGripperAndObjects
         app % The emergency stop flag passed from the app
 
         collisionSwitch
-
+        
+        redHandle
     end
 
     methods
@@ -206,18 +207,22 @@ classdef MotionHandlerWIthGripperAndObjects
         end
         
         function checkForCollisionCall(self)
-
             if self.app.collision % Dynamically check app.eStop value
                 if self.collisionSwitch
                 % disp('eStop is active, pausing motion...');
                 
-                [cubePoints, vertex, faces, faceNormals] = CollisionMesh(self.app.cubeSize(1) ,self.app.cubeSize(2), self.app.cubeRot, self.app.cubeDens , self.app.cubeCent);
+                [cubePoints, vertex, faces, faceNormals, redHandle] = CollisionMesh(self.app.cubeSize(1) ,self.app.cubeSize(2), self.app.cubeRot, self.app.cubeDens , self.app.cubeCent);
                 pause(0.1);  % Small pause while checking for eStop status
                 self.collisionSwitch = false;
                 self.collisionHandler.setObstaclePoints(cubePoints);
+                self.redHandle = redHandle;
                 end
             elseif ~self.app.collision
                 self.collisionSwitch = true;
+                % disp(self.redHandle);
+                % if ~isempty(self.redHandle)
+                delete(self.redHandle);
+                % end
             end
         end
 
@@ -272,11 +277,33 @@ classdef MotionHandlerWIthGripperAndObjects
                 vertices = [];
             end
         
+
+            redHandle = 0
             % Perform RMRC loop
             for i = 1:steps-1
 
                 self.checkForEStopAndPause();  % This will pause the loop if eStop is active
-                self.checkForCollisionCall();
+                % self.checkForCollisionCall();
+            
+                if self.app.collision % Dynamically check app.eStop value
+                    if self.collisionSwitch
+                    % disp('eStop is active, pausing motion...');
+                    
+                    [cubePoints, vertex, faces, faceNormals, redHandle] = CollisionMesh(self.app.cubeSize(1) ,self.app.cubeSize(2), self.app.cubeRot, self.app.cubeDens , self.app.cubeCent);
+                    pause(0.1);  % Small pause while checking for eStop status
+                    self.collisionSwitch = false;
+                    self.collisionHandler.setObstaclePoints(cubePoints);
+                    redHandle
+                    self.redHandle = redHandle;
+                    pause(0.1);
+                    end
+                elseif ~self.app.collision
+                    self.collisionSwitch = true;
+                    % disp(self.redHandle);
+                    % if ~isempty(redHandle)
+                    delete(self.redHandle);
+                    % end
+            end
 
 
                 % Interpolate position and orientation
@@ -334,7 +361,7 @@ classdef MotionHandlerWIthGripperAndObjects
                 self.RMRC.qMatrix(i+1,:) = self.RMRC.qMatrix(i,:) + deltaT * qdot;
         
                 % Check for collisions
-                self.checkForCollisionAndPause();
+                % self.checkForCollisionAndPause();
         
                 % Animate the robot at the new joint configuration
                 self.robot.model.animate(self.RMRC.qMatrix(i+1,:));
