@@ -25,6 +25,7 @@ classdef MotionHandlerWIthGripperAndObjects
 
         app % The emergency stop flag passed from the app
 
+        collisionSwitch
 
     end
 
@@ -33,13 +34,16 @@ classdef MotionHandlerWIthGripperAndObjects
         function self = MotionHandlerWIthGripperAndObjects(robot, centerPoints, radii, obstaclePoints, leftFinger, rightFinger,app, varargin)
             self.robot = robot;
             self.obstaclePoints = obstaclePoints;
-            self.collisionHandler = CollisionEllipsoid(robot, centerPoints, radii);  % Initialize collision handler
+            % self.collisionHandler = CollisionEllipsoid(robot, centerPoints, radii);  % Initialize collision handler
+            self.collisionHandler = CollisionEllipsoidDynamic(robot, centerPoints, radii);
+            self.collisionHandler.setObstaclePoints(obstaclePoints);
             self.RMRC = RMRC(robot);
             self.running = true;
             self.grippersPlotted = false;  % Initially, grippers are not plotted
             self.app = app; % Initialize eStop
+            self.app.collision = false;
 
-
+            self.collisionSwitch = true;
             % Initialize the grippers and attach them to the robot
             self.leftFinger = leftFinger;
             self.rightFinger = rightFinger;
@@ -166,7 +170,8 @@ classdef MotionHandlerWIthGripperAndObjects
         % Check for collisions and pause if detected, resume automatically when resolved
         function checkForCollisionAndPause(self)
             self.updateEllipsoidCenters();  % Update ellipsoid positions based on the current robot state
-            collision = self.collisionHandler.detectCollision(self.obstaclePoints);  % Check for collisions
+            % collision = self.collisionHandler.detectCollision(self.obstaclePoints);  % Check for collisions
+            collision = self.collisionHandler.detectCollision();  % Check for collisions
             if collision
                 disp('Collision detected! Pausing robot motion...');
                 self.running = false;  % Stop the robot's motion
@@ -175,7 +180,8 @@ classdef MotionHandlerWIthGripperAndObjects
                 while collision  % Stay in this loop until the collision is cleared
                     pause(0.1);  % Add a small delay to avoid overloading the system
                     self.updateEllipsoidCenters();  % Keep updating the ellipsoid centers
-                    collision = self.collisionHandler.detectCollision(self.obstaclePoints);  % Recheck for collisions
+                    % collision = self.collisionHandler.detectCollision(self.obstaclePoints);  % Recheck for collisions
+                    collision = self.collisionHandler.detectCollision();  % Recheck for collisions
         
                     if ~collision  % If the collision is cleared
                         disp('Collision resolved. Resuming robot motion...');
@@ -196,6 +202,22 @@ classdef MotionHandlerWIthGripperAndObjects
             while self.app.eStop  % Dynamically check app.eStop value
                 disp('eStop is active, pausing motion...');
                 pause(0.1);  % Small pause while checking for eStop status
+            end
+        end
+        
+        function checkForCollisionCall(self)
+
+            if self.app.collision % Dynamically check app.eStop value
+                if self.collisionSwitch
+                % disp('eStop is active, pausing motion...');
+                
+                [cubePoints, vertex, faces, faceNormals] = CollisionMesh(self.app.cubeSize(1) ,self.app.cubeSize(2), self.app.cubeRot, self.app.cubeDens , self.app.cubeCent);
+                pause(0.1);  % Small pause while checking for eStop status
+                self.collisionSwitch = false;
+                self.collisionHandler.setObstaclePoints(cubePoints);
+                end
+            elseif ~self.app.collision
+                self.collisionSwitch = true;
             end
         end
 
@@ -254,6 +276,8 @@ classdef MotionHandlerWIthGripperAndObjects
             for i = 1:steps-1
 
                 self.checkForEStopAndPause();  % This will pause the loop if eStop is active
+                self.checkForCollisionCall();
+
 
                 % Interpolate position and orientation
                 pos_interp = transl((1-s(i))*startTr(1:3,4)' + s(i)*endTr(1:3,4)');

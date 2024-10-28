@@ -167,7 +167,7 @@ end
 %% Collision Check Function
 % Function to check for collisions and stop or resume motion based on detection
 function running = checkForCollisionAndPause(collisionHandler, running)
-    collisionHandler.drawEllipsoids();  % Draw and update ellipsoid positions
+    % collisionHandler.drawEllipsoids();  % Draw and update ellipsoid positions
     
     % Detect collision
     collision = collisionHandler.detectCollision();
@@ -178,7 +178,7 @@ function running = checkForCollisionAndPause(collisionHandler, running)
         % Pause loop until collision is resolved
         while collision
             pause(0.1);  % Allow time for system to process changes
-            collisionHandler.drawEllipsoids();  % Continuously update positions
+            % collisionHandler.drawEllipsoids();  % Continuously update positions
             collision = collisionHandler.detectCollision();
             if ~collision
                 disp('Collision resolved. Resuming robot motion...');

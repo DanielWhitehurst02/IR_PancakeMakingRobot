@@ -140,11 +140,12 @@ function Main(app)
        i = i+1;
        % goalreached = motionHandler.iterateRMRC(i,endTr,5,0.05,mesh_h,vertices);
        % motionHandler.runRMRC(startTr,endTr,5,0.05,mes)
-        % motionHandler.runRMRC( endTr,5,0.05,mesh_h,vertices);
-        motionHandler.runtwoRMRC(robot2,endTr,endTr3,5,0.05,mesh_h,vertices);
+        motionHandler.runRMRC( endTr,5,0.05,mesh_h,vertices);
+        % motionHandler.runtwoRMRC(robot2,endTr,endTr3,5,0.05,mesh_h,vertices);
         % disp(goalreached)
-        pause(0.1)
-        motionHandler.runtwoRMRC(robot2,endTr2,endTr4,5,0.05,mesh_h,vertices);
+        % pause(0.1)
+        motionHandler.runRMRC( endTr2,5,0.05,mesh_h,vertices);
+        % motionHandler.runtwoRMRC(robot2,endTr2,endTr4,5,0.05,mesh_h,vertices);
         % Pause for a short time (simulate delay between iterations)
         pause(0.1);
         hold on;
