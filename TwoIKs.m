@@ -18,7 +18,12 @@ centerPoints_U = [0.0, 0.0, 0.05; % Base
                 0.0, 0.0, 0.06; % Link 5 
                 0.0, 0.0, 0.0;]; % end-effector
 
-radii_U = [
+radii_U = [0.08, 0.09, 0.055;  
+         0.075, 0.085, 0.075;
+         0.175, 0.08, 0.085; 
+         0.15, 0.06, 0.085; 
+         0.04, 0.055, 0.065;
+         0.04, 0.045, 0.125; 
          0.0, 0.0, 0.0;];
 
 centerPoints_panda = [
@@ -31,6 +36,12 @@ centerPoints_panda = [
     -0.05, 0.025, 0.0;
 ];
 radii_Panda = [
+    0.135, 0.125, 0.075;
+    0.1, 0.175, 0.1;
+    0.125, 0.12, 0.125;
+    0.075, 0.075, 0.095;
+    0.125, 0.125, 0.095;
+    0.085, 0.15, 0.105;
     0.110, 0.1, 0.085;
 ];
     
@@ -46,9 +57,9 @@ rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
 
 %% Define collision handlers for each robot
 % Initialize collision handlers for each robot
-collisionHandler1 = CollisionEllipsoidDynamic(robot1, radii_U);
+collisionHandler1 = CollisionEllipsoidDynamic(robot1, centerPoints_U, radii_U);
 collisionHandler1.setObstaclePoints(cubePoints);
-collisionHandler2 = CollisionEllipsoidDynamic(robot2, radii_Panda);
+collisionHandler2 = CollisionEllipsoidDynamic(robot2, centerPoints_panda, radii_Panda);
 collisionHandler2.setObstaclePoints(cubePoints);
 %% Define end transformations
 endTr1 = transl(0, 0.4, 0.5) * troty(pi);
@@ -156,16 +167,19 @@ end
 %% Collision Check Function
 % Function to check for collisions and stop or resume motion based on detection
 function running = checkForCollisionAndPause(collisionHandler, running)
-    % Detect collision at the end effector
+    collisionHandler.drawEllipsoids();  % Draw and update ellipsoid positions
+    
+    % Detect collision
     collision = collisionHandler.detectCollision();
     if collision
         disp('Collision detected! Pausing robot motion...');
         running = false;
-
+        
         % Pause loop until collision is resolved
         while collision
             pause(0.1);  % Allow time for system to process changes
-            collision = collisionHandler.detectCollision();  % Continuously check collision
+            collisionHandler.drawEllipsoids();  % Continuously update positions
+            collision = collisionHandler.detectCollision();
             if ~collision
                 disp('Collision resolved. Resuming robot motion...');
                 running = true;
