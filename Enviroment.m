@@ -24,35 +24,35 @@ Spatula=[-0.42,0.5,0.95];
 %Place other objects
 
   % Place the object
-mesh_h = PlaceObject('BlueSyrupBottle.ply');
-vertices = get(mesh_h, 'Vertices');
+mesh_hBlue = PlaceObject('BlueSyrupBottle.ply');
+vertices = get(mesh_hBlue, 'Vertices');
 transformedVertices = [vertices, ones(size(vertices, 1), 1)] * transl(BlueBottle)';
-set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update object position
+set(mesh_hBlue, 'Vertices', transformedVertices(:, 1:3)); % Update object position
 
-mesh_h = PlaceObject('PinkSyrupBottle.ply');
-vertices = get(mesh_h, 'Vertices');
+mesh_hPink = PlaceObject('PinkSyrupBottle.ply');
+vertices = get(mesh_hPink, 'Vertices');
 transformedVertices = [vertices, ones(size(vertices, 1), 1)] * transl(PinkBottle)';
-set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update object position
+set(mesh_hPink, 'Vertices', transformedVertices(:, 1:3)); % Update object position
 
-mesh_h = PlaceObject('BrownSyrupBottle.ply');
-vertices = get(mesh_h, 'Vertices');
+mesh_hBrown = PlaceObject('BrownSyrupBottle.ply');
+vertices = get(mesh_hBrown, 'Vertices');
 transformedVertices = [vertices, ones(size(vertices, 1), 1)] * transl(BrownBottle)';
-set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update object position
+set(mesh_hBrown, 'Vertices', transformedVertices(:, 1:3)); % Update object position
 
-mesh_h = PlaceObject('DoughBottle.ply');
-vertices = get(mesh_h, 'Vertices');
+mesh_hDough = PlaceObject('DoughBottle.ply');
+vertices = get(mesh_hDough, 'Vertices');
 transformedVertices = [vertices, ones(size(vertices, 1), 1)] * transl(DoughBottle)';
-set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update object position
+set(mesh_hDough, 'Vertices', transformedVertices(:, 1:3)); % Update object position
 
-mesh_h = PlaceObject('spatula.ply');
-vertices = get(mesh_h, 'Vertices');
+mesh_hSpatula = PlaceObject('spatula.ply');
+vertices = get(mesh_hSpatula, 'Vertices');
 transformedVertices = [vertices, ones(size(vertices, 1), 1)] * transl(Spatula)';
-set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update object position
+set(mesh_hSpatula, 'Vertices', transformedVertices(:, 1:3)); % Update object position
 
-mesh_h = PlaceObject('pancake.ply');
-vertices = get(mesh_h, 'Vertices');
+mesh_hPancake = PlaceObject('pancake.ply');
+vertices = get(mesh_hPancake, 'Vertices');
 transformedVertices = [vertices, ones(size(vertices, 1), 1)] * transl([-0.3, -0.33, 0.57])';
-set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update object position
+set(mesh_hPancake, 'Vertices', transformedVertices(:, 1:3)); % Update object position
 
 PlaceObject('Stove.ply',[-0.2,0.5,0.5]);
 PlaceObject('ConveyorBelt.ply',[0.2,-0.5,0]);
