@@ -158,39 +158,43 @@ classdef MotionHandlerWIthGripperAndObjects
 
         end
 
-        %% Check for collisions and stop if detected
-        %function checkForCollisionAndStop(self)
-        %    self.updateEllipsoidCenters();  % Update ellipsoid positions based on the current robot state
-        %    collision = self.collisionHandler.detectCollision(self.obstaclePoints);  % Check for collisions
-        %    if collision
-        %        disp('Collision detected! Stopping robot.');
-        %        %self.eStop();  % Stop the robot if a collision is detected
-        %    end
-        %end
 
         % Check for collisions and pause if detected, resume automatically when resolved
+        % Check for collisions and pause only if app.collision is active
         function checkForCollisionAndPause(self)
-            self.updateEllipsoidCenters();  % Update ellipsoid positions based on the current robot state
-            % collision = self.collisionHandler.detectCollision(self.obstaclePoints);  % Check for collisions
-            collision = self.collisionHandler.detectCollision();  % Check for collisions
+            % Exit immediately if collision checking is disabled
+            if ~self.app.collision
+                return;
+            end
+        
+            % Perform collision checking
+            self.updateEllipsoidCenters();  % Update ellipsoid centers based on the current state
+            collision = self.collisionHandler.detectCollision();
+        
             if collision
                 disp('Collision detected! Pausing robot motion...');
-                self.running = false;  % Stop the robot's motion
+                self.running = false;
         
-                % Pause the loop until the collision is cleared
-                while collision  % Stay in this loop until the collision is cleared
-                    pause(0.1);  % Add a small delay to avoid overloading the system
-                    self.updateEllipsoidCenters();  % Keep updating the ellipsoid centers
-                    % collision = self.collisionHandler.detectCollision(self.obstaclePoints);  % Recheck for collisions
-                    collision = self.collisionHandler.detectCollision();  % Recheck for collisions
+                % Loop until collision is cleared or app.collision is disabled
+                while collision && self.app.collision
+                    pause(0.1);
+                    self.updateEllipsoidCenters();  % Continuously update ellipsoid centers
+                    collision = self.collisionHandler.detectCollision();  % Re-check for collision
         
-                    if ~collision  % If the collision is cleared
+                    % If collision is cleared or app.collision is set to false, resume motion
+                    if ~collision
                         disp('Collision resolved. Resuming robot motion...');
-                        self.running = true;  % Resume robot motion
+                        self.running = true;
+                    elseif ~self.app.collision
+                        disp('Collision checking disabled. Exiting pause...');
+                        delete(self.redHandle);
+                        self.redHandle = []; 
+                        break;  % Exit the loop immediately if app.collision is false
                     end
                 end
             end
         end
+
 
         %% Emergency stop function
         %function eStop(self)
@@ -207,24 +211,32 @@ classdef MotionHandlerWIthGripperAndObjects
         end
         
         function checkForCollisionCall(self)
-            if self.app.collision % Dynamically check app.eStop value
+            if self.app.collision
                 if self.collisionSwitch
-                % disp('eStop is active, pausing motion...');
-                
-                [cubePoints, vertex, faces, faceNormals, redHandle] = CollisionMesh(self.app.cubeSize(1) ,self.app.cubeSize(2), self.app.cubeRot, self.app.cubeDens , self.app.cubeCent);
-                pause(0.1);  % Small pause while checking for eStop status
-                self.collisionSwitch = false;
-                self.collisionHandler.setObstaclePoints(cubePoints);
-                self.redHandle = redHandle;
+                    % Generate new obstacle points from the specified parameters
+                    [cubePoints, ~, ~, ~, redHandle] = CollisionMesh(self.app.cubeSize(1), self.app.cubeSize(2), self.app.cubeRot, self.app.cubeDens, self.app.cubeCent);
+                    pause(0.1);
+        
+                    % Update collision handler with new obstacle points
+                    self.collisionSwitch = false;
+                    self.collisionHandler.setObstaclePoints(cubePoints);
+                    self.redHandle = redHandle;
+        
+                    % Trigger immediate collision check with updated points
+                    self.checkForCollisionAndPause();
                 end
-            elseif ~self.app.collision
+            else
+                % Reset collision switch for next time
                 self.collisionSwitch = true;
-                % disp(self.redHandle);
-                % if ~isempty(self.redHandle)
-                delete(self.redHandle);
-                % end
+        
+                % Delete redHandle if it exists and is valid
+                if ~isempty(self.redHandle) && isvalid(self.redHandle)
+                    delete(self.redHandle);
+                    self.redHandle = [];  % Clear the handle
+                end
             end
         end
+
 
 
         %Get current joints
@@ -283,27 +295,12 @@ classdef MotionHandlerWIthGripperAndObjects
             for i = 1:steps-1
 
                 self.checkForEStopAndPause();  % This will pause the loop if eStop is active
-                % self.checkForCollisionCall();
-            
-                if self.app.collision % Dynamically check app.eStop value
-                    if self.collisionSwitch
-                    % disp('eStop is active, pausing motion...');
-                    
-                    [cubePoints, vertex, faces, faceNormals, redHandle] = CollisionMesh(self.app.cubeSize(1) ,self.app.cubeSize(2), self.app.cubeRot, self.app.cubeDens , self.app.cubeCent);
-                    pause(0.1);  % Small pause while checking for eStop status
-                    self.collisionSwitch = false;
-                    self.collisionHandler.setObstaclePoints(cubePoints);
-                    redHandle
-                    self.redHandle = redHandle;
-                    pause(0.1);
-                    end
-                elseif ~self.app.collision
-                    self.collisionSwitch = true;
-                    % disp(self.redHandle);
-                    % if ~isempty(redHandle)
-                    delete(self.redHandle);
-                    % end
-            end
+                
+                % Check for collision only if app.collision is true
+                if self.app.collision
+                    self.checkForCollisionCall();  % Update obstacle points and collision handler
+                    self.checkForCollisionAndPause();  % Pause if collision is detected
+                end
 
 
                 % Interpolate position and orientation
@@ -698,10 +695,10 @@ classdef MotionHandlerWIthGripperAndObjects
 
         % Run inverse kinematics-based motion with gripper synchronization
         function runIK(self, startTr, endTr, steps, varargin)
+            % Generate joint trajectory from start to end transformation
             q0 = zeros(1, self.robot.model.n);  % Assuming the robot has n degrees of freedom
             qStart = self.robot.model.ikcon(startTr, q0);  % Initial pose
             qEnd = self.robot.model.ikcon(endTr, qStart);  % End pose
-        
             qMatrix = jtraj(qStart, qEnd, steps);  % Generate smooth trajectory
         
             % Check if mesh_h and vertices were provided
@@ -714,27 +711,35 @@ classdef MotionHandlerWIthGripperAndObjects
             end
         
             for i = 1:steps
-
-                self.checkForEStopAndPause();  % This will pause the loop if eStop is active
-
-                q_current = qMatrix(i, :);  % Current joint configuration
-                self.robot.model.animate(q_current);  % Animate the robot
+                % Check for emergency stop and pause if necessary
+                self.checkForEStopAndPause();
         
-                self.checkForCollisionAndPause();
-
-                % Update the object (mesh) position if mesh_h and vertices are provided
+                % Check for collisions if enabled in the app
+                if self.app.collision
+                    % Check and update collision settings
+                    self.checkForCollisionCall();
+                    self.checkForCollisionAndPause();  % Pause if a collision is detected
+                end
+        
+                % Set current joint configuration and animate robot
+                q_current = qMatrix(i, :);
+                self.robot.model.animate(q_current);
+        
+                % Update object (mesh) position if mesh_h and vertices are provided
                 if ~isempty(mesh_h) && ~isempty(vertices)
                     tr = self.robot.model.fkine(self.robot.model.getpos());
                     transformedVertices = [vertices, ones(size(vertices, 1), 1)] * tr.T';
                     set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update mesh position
                 end
         
-                % Update the grippers' positions to follow the end-effector
+                % Update gripper positions to follow the end-effector
                 self.updateGrippersPosition();
         
-                pause(0.05);  % Adjust the pause duration as needed for smooth animation
+                % Small pause for smooth animation
+                pause(0.05);
             end
         end
+
         % 
         % function complete = iterateGoals(self, i)
         %     self.goalIndex

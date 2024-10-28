@@ -22,32 +22,34 @@ classdef CollisionEllipsoidDynamic < handle
             obj.obstaclePoints = newObstaclePoints;
         end
 
-        % Draw ellipsoids based on current centers and transformations
-        function drawEllipsoids(obj)
-            [az, el] = view;  % Store current view
-            originalLimits = axis;  % Store current axis limits
-
-            q = obj.robotModel.model.getpos();  % Get joint positions
-            tr = obj.computeTransforms(q);  % Compute link transformations
+        % Draw or update ellipsoids based on current centers and transformations
+        function drawEllipsoids(obj, plotFlag)
+            if nargin < 2
+                plotFlag = false;  % Default to not plotting
+            end
+            
+            % Get current joint positions and transformations
+            q = obj.robotModel.model.getpos();  
+            tr = obj.computeTransforms(q);  
 
             for i = 1:length(obj.ellipsoidCenters)
                 % Update ellipsoid center based on the current transformation
                 transformedCenter = tr(:,:,i) * [obj.ellipsoidCenters(i, :), 1]';
                 transformedCenter = transformedCenter(1:3)';  % Extract transformed x, y, z
                 
+                % Generate ellipsoid coordinates
                 [X, Y, Z] = obj.generateEllipsoid(transformedCenter, obj.ellipsoidRadii(i, :));
-
-                % Plot or update the ellipsoid surface
-                if length(obj.ellipsoidPlotHandles) < i || isempty(obj.ellipsoidPlotHandles{i}) || ~isvalid(obj.ellipsoidPlotHandles{i})
-                    hold on;
-                    obj.ellipsoidPlotHandles{i} = surf(X, Y, Z, 'FaceAlpha', 0.1, 'EdgeColor', 'none');
-                else
-                    set(obj.ellipsoidPlotHandles{i}, 'XData', X, 'YData', Y, 'ZData', Z);
+                
+                % Plot only if plotFlag is true
+                if plotFlag
+                    if length(obj.ellipsoidPlotHandles) < i || isempty(obj.ellipsoidPlotHandles{i}) || ~isvalid(obj.ellipsoidPlotHandles{i})
+                        hold on;
+                        obj.ellipsoidPlotHandles{i} = surf(X, Y, Z, 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+                    else
+                        set(obj.ellipsoidPlotHandles{i}, 'XData', X, 'YData', Y, 'ZData', Z);
+                    end
                 end
             end
-
-            view(az, el);  % Restore view
-            axis(originalLimits);  % Restore axis limits
         end
 
         % Function to generate an ellipsoid at a specific center and with specific radii

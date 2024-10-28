@@ -29,7 +29,7 @@ function [cubePoints, vertex, face, faceNormals, redHandle] = CollisionMesh(widt
     redHandle = plot3(cubePoints(:,1), cubePoints(:,2), cubePoints(:,3), 'r*');
 
     % Define plotOptions for the RectangularPrism
-    plotOptions.plotVerts = true;  
+    plotOptions.plotVerts = false;  
     plotOptions.plotEdges = false;  
     plotOptions.plotFaces = false;  
     
