@@ -119,7 +119,19 @@ function Main(app)
     %setEndEffectorPosition(app, robot);
     
     while ~app.isRunning
+
+        if app.animationState == 0
+
+        % disp('slider changed')
         smoothAnimationLoopUR3(app,robot);
+
+        elseif app.animationState == 1
+         % disp('box changed')
+        setEndEffectorPositionUR3(app,robot)
+
+        elseif app.animationState == 2
+        velocityControlLoopUR3(app,robot)
+        end
     end
 
     
@@ -151,7 +163,8 @@ function Main(app)
         % Pause for a short time (simulate delay between iterations)
         pause(0.1);
         hold on;
-
+    
+       % motionHandler.checkSerial();
 
         %n = input('Enter a number: ');
 
@@ -180,7 +193,7 @@ function smoothAnimationLoopUR3(app, robot)
    % Access the current values of the sliders for joint angles
    targetJointAngles = [app.ur3_joint1, app.ur3_joint2, app.ur3_joint3, ...
                         app.ur3_joint4, app.ur3_joint5, app.ur3_joint6];
-  
+   
    % Get the current joint angles of the robot
    currentJointAngles = robot.model.getpos();
   
@@ -201,6 +214,19 @@ function smoothAnimationLoopUR3(app, robot)
        % Pause for a short time to allow for smooth updating
        pause(0.05);  % Adjust the pause duration for smoother animation
    end
+
+    
+    endTrs = robot.model.fkine(targetJointAngles);
+    endTrs1 = endTrs.T;
+
+    app.ur3_endposX= endTrs1(1,4);
+    app.ur3_endposY = endTrs1(2,4);
+    app.ur3_endposZ = endTrs1(3,4);
+
+    %Set Display to values
+    app.XEditField.Value = app.ur3_endposX;
+    app.YEditField.Value = app.ur3_endposY;
+    app.ZEditField.Value = app.ur3_endposZ;
   
    % Pause for a short time to allow for the sliders to update values
    pause(0.1);  % Adjust the pause duration as needed
@@ -257,10 +283,19 @@ function setEndEffectorPositionUR3(app, robot)
     % Use inverse kinematics (ikcon) to compute joint angles for the desired position
     newJointAngles = robot.model.ikcon(targetTr, currentJointAngles);
     
+    app.Link1Slider.Value =  rad2deg(newJointAngles(1));
+    app.Link2Slider.Value =  rad2deg(newJointAngles(2));
+    app.Link3Slider.Value =  rad2deg(newJointAngles(3));
+    app.Link4Slider.Value =  rad2deg(newJointAngles(4));
+    app.Link5Slider.Value =  rad2deg(newJointAngles(5));
+    app.Link6Slider.Value =  rad2deg(newJointAngles(6));
+   
+
     % Animate the robot to move to the desired position
     robot.model.animate(newJointAngles);
     
     % Optional: display the new joint angles (for debugging or display purposes)
     disp('Updated Joint Angles for Desired End-Effector Position:');
     disp(newJointAngles);
+    pause(0.5);
 end
