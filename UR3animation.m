@@ -1,5 +1,5 @@
 %% First animation
-robot = UR3(transl(-0.5,0.2,0.5));
+robot = UR3e(transl(-0.5,0.2,0.5));
 
 
 path = RMRC(robot);  % Instantiate RMRC for the UR3 robot
@@ -17,7 +17,7 @@ end
 
 % Define the target transformation matrix
 
-endTr = transl(Spatula)*trotx(-pi/2) % Example target transformation
+endTr = transl([-0.42,0.5,0.95])*trotx(-pi/2) % Example target transformation
 
 % Set the total time and control frequency
 t = 10;  % Total time for movement (in seconds)

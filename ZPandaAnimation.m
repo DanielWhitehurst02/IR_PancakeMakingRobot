@@ -28,7 +28,7 @@ rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
 cubePoints = [];
 %% Create Motion Handler
 % Initialize MotionHandler with grippers
-motionHandler = MotionHandlerWithGripper(robot, centerPoints, radii, cubePoints, leftFinger, rightFinger);
+motionHandler = MotionHandlerWIthGripperAndObjects(robot, centerPoints, radii, cubePoints, leftFinger, rightFinger);
 
 % Set the total time and control frequency
 t = 5;  % Total time for movement (in seconds)
