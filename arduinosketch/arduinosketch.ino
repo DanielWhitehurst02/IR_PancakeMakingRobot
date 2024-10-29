@@ -48,10 +48,16 @@ void loop() {
     // turn LED on:
     digitalWrite(ledPin, HIGH);
     Serial.print(buttonState);
-    Serial.print('\n');
-    delay(100);
+    Serial.write(13);
+    Serial.write(10);
+//    Serial.print('\n');
+    delay(1);
   } else {
     // turn LED off:
     digitalWrite(ledPin, LOW);
+    Serial.print(buttonState);
+    Serial.write(13);
+    Serial.write(10);
+    delay(1);
   }
 }
