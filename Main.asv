@@ -25,8 +25,8 @@ function Main(app)
 
     robot2 = Panda(transl(0.5, 0.5, 0));
 
-
-    centerPoints2 = [
+    robot2.CreateModel()
+    centerPoints_panda = [
         -0.025, 0.0, 0.06;
         0.0, 0.0975, -0.035;
         0.0, 0.03, 0.075;
@@ -35,7 +35,7 @@ function Main(app)
         0.0, 0.125, 0.025;
         -0.05, 0.025, 0.0;
     ];
-    radii2 = [
+    radii_Panda = [
         0.135, 0.125, 0.075;
         0.1, 0.175, 0.1;
         0.125, 0.12, 0.125;
@@ -45,8 +45,7 @@ function Main(app)
         0.110, 0.1, 0.085;
     ];
     
-    leftFinger2 = Finger();  % Initialize left finger
-    rightFinger2 = Finger2();  % Initialize right finger
+    
     
     hold on
     
@@ -61,11 +60,15 @@ function Main(app)
     cubePoints = [];
 
     %% Create Motion Handler
+    % Initialize MotionHandler with grippers
+ 
+
     % Set the total time and control frequency
     t = 5;  % Total time for movement (in seconds)
     deltaT = 0.05;  % Control step time (in seconds
 
     %% Joint Animation Loop (outside of isRunning loop)
+
     
     while ~app.isRunning
 
@@ -87,9 +90,15 @@ function Main(app)
     %% Calling Motion handler
     motionHandler = MotionHandlerWIthGripperAndObjects(robot, centerPoints, radii, cubePoints, leftFinger, rightFinger,app);
 
-    motionHandler2 = MotionHandlerWIthGripperAndObjects(robot2, centerPoints2, radii2, cubePoints, leftFinger2, rightFinger2,app);
+    % motionHandler2 = MotionHandlerWIthGripperAndObjects(robot2, centerPoints, radii, cubePoints, leftFinger, rightFinger,app);
 
+    % motion
     
+    % s = motionHandler.setGoals(goalMat,50);
+   
+    
+    % disp(s{1})
+
     %% Start the simulation loop
     i = 0;
     while app.isRunning

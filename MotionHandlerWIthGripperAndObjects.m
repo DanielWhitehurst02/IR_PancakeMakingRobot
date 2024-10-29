@@ -377,23 +377,23 @@ classdef MotionHandlerWIthGripperAndObjects
 
         
         function attachPancake(self)
-            if self.isPancakeAttached
-                % Get the full transformation matrix of the end effector
-                endEffectorTr = self.robot.model.fkine(self.robot.model.getpos).T;
-        
-                % Define the offset as a translation matrix
-                offsetTranslation = transl(0.1, 0, -0.1);
-        
-                % Combine the end effector transformation with the offset translation
-                pancakeTransform = endEffectorTr * offsetTranslation;
-        
-                % Apply the combined transformation to the pancake vertices
-                transformedVertices = [self.pancakeVertices, ones(size(self.pancakeVertices, 1), 1)] * pancakeTransform';
-        
-                % Update pancake mesh vertices
-                set(self.pancakeMesh, 'Vertices', transformedVertices(:, 1:3));  % Update pancake position
-            end
-        end
+           if self.isPancakeAttached
+               % Get the full transformation matrix of the end effector
+               endEffectorTr = self.robot.model.fkine(self.robot.model.getpos).T;
+      
+               % Define the offset as a translation matrix
+               offsetTranslation = transl(0, 0.06, 0.06)  * trotx(-pi/2);
+      
+               % Combine the end effector transformation with the offset translation
+               pancakeTransform = endEffectorTr * offsetTranslation;
+      
+               % Apply the combined transformation to the pancake vertices
+               transformedVertices = [self.pancakeVertices, ones(size(self.pancakeVertices, 1), 1)] * pancakeTransform';
+      
+               % Update pancake mesh vertices
+               set(self.pancakeMesh, 'Vertices', transformedVertices(:, 1:3));  % Update pancake position
+           end
+       end
 
 
 
