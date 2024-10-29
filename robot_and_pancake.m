@@ -116,6 +116,8 @@ end
     motionHandler1.runRMRC(endTr0, time, deltaT);
     motionHandler1.OpenOrCloseGrippers('open',50);
     motionHandler1.OpenOrCloseGrippers('close',50);
+
+
     endTr1 = transl(-0.2,0.2,0.9)*troty(pi/2) % Example target transformation 
     motionHandler1.runRMRC(endTr1,time,deltaT,mesh_hSpatula,verticesSpatula);
     endTr2 = transl(-0.2,0.2,0.8)*troty(pi/2)*trotz(-pi/2); 
