@@ -132,23 +132,9 @@ end
     transformedVertices = [verticesPancake, ones(size(verticesPancake, 1), 1)] * transl([-0.1, 0.2, 0.7])';
     set(mesh_hPancake, 'Vertices', transformedVertices(:, 1:3)); % Update pancake's initial position
     
-    % Pass pancake parameters to the motion handler
-    motionHandler1.pancake_mesh = mesh_hPancake;
-    motionHandler1.pancake_vertices = verticesPancake;
-
-    
-
-    % Lift the pancake to follow the end effector
-    motionHandler1.liftPancake();
-    
-    motionHandler1.runRMRC(endTr4,time,deltaT,mesh_hSpatula,verticesSpatula);
-    endTr5 = transl(-0.1,0.2,1)*troty(pi/2)*trotz(pi/2);
-    motionHandler1.runRMRC(endTr5,time,deltaT,mesh_hSpatula,verticesSpatula);
 
 
-    % Set drop position and drop the pancake
-    dropPosition = transl(-0.3, -0.33, 0.57);  % Define drop location
-    motionHandler1.dropPancake(dropPosition);
+
     
     % Move robot away, leaving pancake at the drop position
     endTr5 = transl(-0.1, 0.2, 0.9) * troty(pi/2) * trotz(pi/2);

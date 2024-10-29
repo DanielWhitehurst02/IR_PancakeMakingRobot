@@ -28,8 +28,8 @@ function [cubePoints, vertex, face, faceNormals, redHandle] = CollisionMesh(widt
     % Plot the cube's point cloud (only red)
     % Plot the cube's point cloud (only red) if requested
 
-    redHandle = plot3(cubePoints(:,1), cubePoints(:,2), cubePoints(:,3), 'r*');
-
+    %redHandle = plot3(cubePoints(:,1), cubePoints(:,2), cubePoints(:,3), 'r*');
+    redHandle = [];
 
     % Define plotOptions for the RectangularPrism
     plotOptions.plotVerts = false;  

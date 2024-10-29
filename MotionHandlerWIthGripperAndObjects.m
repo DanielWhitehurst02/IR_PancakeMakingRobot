@@ -27,6 +27,8 @@ classdef MotionHandlerWIthGripperAndObjects
 
         collisionSwitch
         redHandle
+        cubePoints
+        plotObject
 
         lightCurtain  % Instance of LightCurtain for breach detection
         handHandle    % Handle for the loaded object (e.g., hand object)
@@ -251,6 +253,8 @@ classdef MotionHandlerWIthGripperAndObjects
                     self.collisionHandler.setObstaclePoints(cubePoints);
                     self.redHandle = redHandle;  % Store handle
                     self.collisionSwitch = false;
+                    self.cubePoints = cubePoints;
+                    disp(self.cubePoints)
                 end
             else
                 % Delete redHandle if it exists and reset switch
@@ -306,6 +310,8 @@ classdef MotionHandlerWIthGripperAndObjects
                 disp("Breach cleared. Resuming motion...");
             end
         end
+        
+
 
 
         %Get current joints
@@ -324,6 +330,39 @@ classdef MotionHandlerWIthGripperAndObjects
             self.running = true;
             self.runRMRC(self.robot.model.fkine(self.robot.model.getpos), self.prevGoal, self.prevtime, self.prevdeltaT);
         end
+
+
+
+        function DrawAndDelete(self)
+            % Persistent variables to manage plotting state across calls
+            persistent collisionCubePoints collisionPlotHandle isPlotted
+        
+            % Initialize the flag if it's empty
+            if isempty(isPlotted)
+                isPlotted = false;
+            end
+        
+            % Check if collision is active
+            if self.app.collision
+                % Plot only if not already plotted
+                if ~isPlotted
+                    [collisionCubePoints, ~, ~, ~, redHandle] = CollisionMesh(self.app.cubeSize(1), self.app.cubeSize(2), ...
+                                                                      self.app.cubeRot, self.app.cubeDens, self.app.cubeCent);
+                    collisionPlotHandle = plot3(collisionCubePoints(:,1), collisionCubePoints(:,2), collisionCubePoints(:,3), 'r*'); % Plot the collision points
+                    hold on; % Retain plot for further updates
+                    isPlotted = true; % Set the flag to indicate that the plot exists
+                end
+            else
+                % Delete the plot only if it was previously plotted
+                if isPlotted && isvalid(collisionPlotHandle)
+                    delete(collisionPlotHandle); % Delete the plot
+                    collisionPlotHandle = []; % Clear the persistent reference
+                    collisionCubePoints = []; % Clear the cube points
+                    isPlotted = false; % Reset the flag
+                end
+            end
+        end
+
 
         % Run RMRC with gripper synchronization
         function runRMRC(self, endTr, time, deltaT, varargin)
@@ -365,8 +404,10 @@ classdef MotionHandlerWIthGripperAndObjects
             % Perform RMRC loop
             for i = 1:steps-1
 
+                self.DrawAndDelete();
 
                 % self.checkSerial();
+
                 self.checkForEStopAndPause();  % This will pause the loop if eStop is active
                 
                 % Check for collisions and update/redraw if necessary
