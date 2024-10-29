@@ -51,12 +51,13 @@ function Main(app)
     
 
     %%
-    center = [-1.5, 0, 0.5];  % Center of the cube
-    rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
-    
-    % Call meshcube which also calls RectangularPrism and returns all the values
-    [cubePoints, vertex, faces, faceNormals] = CollisionMesh(0.5, 0.5, rot, 0.02, center);
-    %delete(cubePoints);
+    %center = [-1.5, 0, 0.5];  % Center of the cube
+    %rot = [pi/3, pi/4, 2*pi/7];  % Rotation in x, y, z
+    %
+    %% Call meshcube which also calls RectangularPrism and returns all the values
+    %[cubePoints, vertex, faces, faceNormals,redHandle] = CollisionMesh(0.5, 0.5, rot, 0.02, center);
+    %delete(redHandle);
+    cubePoints = [];
     %%
     % Place the object
     mesh_h = PlaceObject('BlueSyrupBottle.ply');
@@ -138,6 +139,7 @@ function Main(app)
     i = 0;
     while app.isRunning
        i = i+1;
+
        % goalreached = motionHandler.iterateRMRC(i,endTr,5,0.05,mesh_h,vertices);
        % motionHandler.runRMRC(startTr,endTr,5,0.05,mes)
         motionHandler.runRMRC( endTr,5,0.05,mesh_h,vertices);

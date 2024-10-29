@@ -26,11 +26,8 @@ classdef MotionHandlerWIthGripperAndObjects
         app % The emergency stop flag passed from the app
 
         collisionSwitch
+        
         redHandle
-
-        lightCurtain  % Instance of LightCurtain for breach detection
-        handHandle    % Handle for the loaded object (e.g., hand object)
-        lightCurtainStartOffset
     end
 
     methods
@@ -51,9 +48,6 @@ classdef MotionHandlerWIthGripperAndObjects
             % Initialize the grippers and attach them to the robot
             self.leftFinger = leftFinger;
             self.rightFinger = rightFinger;
-
-
-
 
             % Set default gripper rotation and translation if not provided
             if length(varargin) >= 1 && ~isempty(varargin{1})
@@ -166,14 +160,19 @@ classdef MotionHandlerWIthGripperAndObjects
 
 
         % Check for collisions and pause if detected, resume automatically when resolved
-        % Check for collisions and pause only if app.collision is active
         function checkForCollisionAndPause(self)
-            % Exit immediately if collision checking is disabled
+            % Check if collision checking is disabled
             if ~self.app.collision
+                % Delete redHandle if it exists and is valid
+                if ~isempty(self.redHandle) && isvalid(self.redHandle)
+                    delete(self.redHandle);
+                    self.redHandle = [];  % Reset handle after deletion
+                    drawnow;  % Force graphics update
+                end
                 return;
             end
         
-            % Perform collision checking
+            % Perform collision checking if enabled
             self.updateEllipsoidCenters();  % Update ellipsoid centers based on the current state
             collision = self.collisionHandler.detectCollision();
         
@@ -187,14 +186,22 @@ classdef MotionHandlerWIthGripperAndObjects
                     self.updateEllipsoidCenters();  % Continuously update ellipsoid centers
                     collision = self.collisionHandler.detectCollision();  % Re-check for collision
         
-                    % If collision is cleared or app.collision is set to false, resume motion
+                    % If collision is cleared, resume motion and delete redHandle if necessary
                     if ~collision
                         disp('Collision resolved. Resuming robot motion...');
                         self.running = true;
+                        if ~isempty(self.redHandle) && isvalid(self.redHandle)
+                            delete(self.redHandle);
+                            self.redHandle = [];  % Reset handle after deletion
+                            drawnow;
+                        end
                     elseif ~self.app.collision
                         disp('Collision checking disabled. Exiting pause...');
-                        delete(self.redHandle);
-                        self.redHandle = []; 
+                        if ~isempty(self.redHandle) && isvalid(self.redHandle)
+                            delete(self.redHandle);
+                            self.redHandle = [];  % Reset handle after deletion
+                            drawnow;
+                        end
                         break;  % Exit the loop immediately if app.collision is false
                     end
                 end
@@ -215,73 +222,34 @@ classdef MotionHandlerWIthGripperAndObjects
                 pause(0.1);  % Small pause while checking for eStop status
             end
         end
-               
-
+        
         function checkForCollisionCall(self)
             if self.app.collision
                 if self.collisionSwitch
-                    % Create a new collision mesh and store the handle
-                    [cubePoints, ~, ~, ~, redHandle] = CollisionMesh(self.app.cubeSize(1), self.app.cubeSize(2), ...
-                                                                     self.app.cubeRot, self.app.cubeDens, self.app.cubeCent);
-                    pause(0.1);
-                    self.collisionHandler.setObstaclePoints(cubePoints);
-                    self.redHandle = redHandle;  % Store handle
+                    % Generate new obstacle points with `plotHandleFlag` based on app.collision
+                    [cubePoints, ~, ~, ~, self.redHandle] = CollisionMesh(self.app.cubeSize(1), self.app.cubeSize(2), self.app.cubeRot, self.app.cubeDens, self.app.cubeCent, true);
+                    %self.redHandle = plot3(cubePoints(:,1), cubePoints(:,2), cubePoints(:,3), 'r*');
+                    % Update the collision handler with the new obstacle points
                     self.collisionSwitch = false;
+                    self.collisionHandler.setObstaclePoints(cubePoints);
+        
+                    % Trigger immediate collision check with updated points
+                    self.checkForCollisionAndPause();
                 end
             else
-                % Delete redHandle if it exists and reset switch
+                % Reset the collision switch for next time
+                self.collisionSwitch = true;
+                delete(self.redHandle);
+                % Delete redHandle if it exists
                 if ~isempty(self.redHandle) && isvalid(self.redHandle)
                     delete(self.redHandle);
-                    self.redHandle = [];  % Clear handle after deletion
+                    self.redHandle = [];  % Reset the handle to avoid reuse
+                    drawnow;
                 end
-                self.collisionSwitch = true;
             end
         end
 
 
-
-        % Vanilla function to check for light curtain breach and handle stopping/resuming
-        function checkForLightCurtainBreachAndPause(self, iteration)
-            % Persistent variables to retain across calls
-            persistent lightCurtain handVertices handHandle initialTransform
-        
-            % Initialize only on the first call
-            if isempty(lightCurtain) || isempty(handVertices) || isempty(handHandle)
-                % Create the light curtain as a single surface
-                lightCurtain = LightCurtain(-1.6, 1.7, 0, 1.5, 0.2, 0.1, 'none');
-        
-                % Load the hand object from the .ply file and apply an initial transformation
-                initialTransform = transl(0, 0, 1) * trotx(pi/2);  % Initial transformation matrix
-                hold on;
-        
-                % Load the hand.ply file and plot it using the LightCurtain class method
-                [handVertices, handHandle] = lightCurtain.loadObject('hand.ply', initialTransform);
-            end
-        
-            % Apply a transformation based on the iteration parameter
-            newTransform = transl(0, 0.1 * iteration, 0) * initialTransform;  % Translate based on iteration
-            updatedVertices = lightCurtain.updateObjectPosition(handVertices, newTransform);
-            set(handHandle, 'Vertices', updatedVertices);  % Update plot with new vertices
-        
-            % Check if the hand has breached the light curtain
-            if lightCurtain.detectObject(updatedVertices)
-                disp("Light curtain breached! Pausing motion...");
-        
-                % Pause the loop until breach is cleared or light curtain is turned off
-                while lightCurtain.detectObject(updatedVertices)
-                    % Break if light curtain toggle is off
-                    if ~self.app.lightCurtain
-                        disp("Light curtain detection disabled. Exiting pause...");
-                        break;
-                    end
-                    pause(0.1);  % Short pause to allow for reset condition
-                    % Continuously update vertices if required
-                    set(handHandle, 'Vertices', updatedVertices);
-                end
-        
-                disp("Breach cleared. Resuming motion...");
-            end
-        end
 
 
         %Get current joints
@@ -310,7 +278,6 @@ classdef MotionHandlerWIthGripperAndObjects
         
             steps = time/deltaT;
 
-            self.lightCurtainStartOffset = NaN; % Initialize as NaN or empty
 
             startTr_struct = self.getCurrentEndTr();
 
@@ -336,27 +303,21 @@ classdef MotionHandlerWIthGripperAndObjects
             end
         
 
-            redHandle = 0
-            baseIteration = 0;
+            
             % Perform RMRC loop
             for i = 1:steps-1
 
                 self.checkForEStopAndPause();  % This will pause the loop if eStop is active
                 
-                % Check for collisions and update/redraw if necessary
-                self.checkForCollisionCall();
-                self.checkForCollisionAndPause();  % Pause if collision is detected
-
-                % Check for light curtain activation
-                if self.app.lightCurtain
-                    % Set the offset if it hasn't been set yet
-                    if isnan(self.lightCurtainStartOffset)
-                        self.lightCurtainStartOffset = i;
-                    end
+                % Check for collision only if app.collision is true
+                if self.app.collision
+                    self.checkForCollisionCall();  % Update obstacle points and collision handler
+                    self.checkForCollisionAndPause();  % Pause if collision is detected
+                end
                 
-                    % Call light curtain function, passing the adjusted iteration
-                    adjustedIteration = i - self.lightCurtainStartOffset;
-                    self.checkForLightCurtainBreachAndPause(adjustedIteration);
+                if ~self.app.collision
+                    self.redHandle.plot(na,namedargs2cell)
+                    delete(self.redHandle)
                 end
 
                 % Interpolate position and orientation
