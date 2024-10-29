@@ -4,15 +4,17 @@ clear;
 serialObj = serialport("/dev/ttyUSB0",9600);
 configureTerminator(serialObj,"CR/LF");
 flush(serialObj);
-serialObj.UserData = struct("Data",[],"Count",1)
-
+% serialObj.UserData = struct("Data",[],"Count",1)
+% 
 % while truecle
 while true
-data = readline(serialObj);
-pause(0.1)
+% data = readline(serialObj);
+% pause(0.1)
+data = str2double(readline(serialObj));
 disp(data)
-flush(serialObj);
 
+% flush(serialObj);
+% pause (0.1)
 end
 % flush(serialObj);
 % pause(1)
