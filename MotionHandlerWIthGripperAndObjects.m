@@ -31,12 +31,11 @@ classdef MotionHandlerWIthGripperAndObjects
         lightCurtain  % Instance of LightCurtain for breach detection
         handHandle    % Handle for the loaded object (e.g., hand object)
         lightCurtainStartOffset
-        
-        pancake_mesh  % Mesh handle for the pancake
-        pancake_vertices  % Original vertices of the pancake
-        pancakeStatus  % Status of pancake ('lift', 'drop', 'hold')
-        pancakeDropPosition  % Target drop position for the pancake
-
+         % 
+         % serialUsed = true;
+         % serialportname = "/dev/ttyUSB0";
+         % serialBaud = 9600;
+         % serialObj
     end
 
     methods
@@ -58,10 +57,10 @@ classdef MotionHandlerWIthGripperAndObjects
             self.leftFinger = leftFinger;
             self.rightFinger = rightFinger;
 
-
-            self.pancakeStatus = 'hold';  % Default to holding position
-            self.pancakeDropPosition = [];  % Default with no specific drop position
-
+            % 
+            % self.serialObj = serialport(self.serialportname,self.serialBaud);
+            % configureTerminator(self.serialObj,"CR/LF");
+            % flush(self.serialObj);
 
             % Set default gripper rotation and translation if not provided
             if length(varargin) >= 1 && ~isempty(varargin{1})
@@ -218,12 +217,29 @@ classdef MotionHandlerWIthGripperAndObjects
 
         % Check for eStop and pause if necessary
         function checkForEStopAndPause(self)
+            
+            % data = str2double(readline(self.serialObj));
+            % disp(data)
+            %     if data == 1
+            %         self.app.eStop = true;
+            %     end
+
             while self.app.eStop  % Dynamically check app.eStop value
                 disp('eStop is active, pausing motion...');
                 pause(0.1);  % Small pause while checking for eStop status
             end
         end
-               
+        
+        % function checkSerial(self)
+        %     data = readline(self.serialObj);
+        %     disp(data)
+        % 
+        %     doubdata = str2num(data);
+        %     if doubdata == 1
+        %         disp('wegaming')
+        %     end
+        % end
+
 
         function checkForCollisionCall(self)
             if self.app.collision
@@ -349,6 +365,8 @@ classdef MotionHandlerWIthGripperAndObjects
             % Perform RMRC loop
             for i = 1:steps-1
 
+
+                % self.checkSerial();
                 self.checkForEStopAndPause();  % This will pause the loop if eStop is active
                 
                 % Check for collisions and update/redraw if necessary
@@ -368,22 +386,6 @@ classdef MotionHandlerWIthGripperAndObjects
                 end
 
 
-                % Inside runRMRC function
-                if strcmp(self.pancakeStatus, 'lift') && ~isempty(self.pancake_mesh) && ~isempty(self.pancake_vertices)
-                    % Move pancake with the end effector
-                    tr = self.robot.model.fkine(self.robot.model.getpos());
-                    transformedVertices = [self.pancake_vertices, ones(size(self.pancake_vertices, 1), 1)] * tr.T';
-                    set(self.pancake_mesh, 'Vertices', transformedVertices(:, 1:3));
-                
-                elseif strcmp(self.pancakeStatus, 'drop') && ~isempty(self.pancakeDropPosition)
-                    % Drop pancake at the specified drop position and set status to 'hold'
-                    dropTr = self.pancakeDropPosition;
-                    transformedVertices = [self.pancake_vertices, ones(size(self.pancake_vertices, 1), 1)] * dropTr';
-                    set(self.pancake_mesh, 'Vertices', transformedVertices(:, 1:3));
-                    self.pancakeStatus = 'hold';  % Set to hold after dropping
-                end
-
-                
 
                 % Interpolate position and orientation
                 pos_interp = transl((1-s(i))*startTr(1:3,4)' + s(i)*endTr(1:3,4)');
@@ -455,27 +457,9 @@ classdef MotionHandlerWIthGripperAndObjects
                     transformedVertices = [vertices, ones(size(vertices, 1), 1)] * tr.T';
                     set(mesh_h, 'Vertices', transformedVertices(:, 1:3)); % Update mesh position
                 end
-
-                hold on;
+        
                 pause(0.01);  % Adjust pause for smooth animation
             end
-        end
-        
-
-        % Set pancake to move with end effector
-        function liftPancake(self)
-            self.pancakeStatus = 'lift';
-        end
-        
-        % Set pancake to drop at a specified position
-        function dropPancake(self, dropPosition)
-            self.pancakeStatus = 'drop';
-            self.pancakeDropPosition = dropPosition;
-        end
-        
-        % Hold pancake in its current position
-        function holdPancake(self)
-            self.pancakeStatus = 'hold';
         end
 
         function runtwoRMRC(self, robot2, endTr1,endTr2, time, deltaT, varargin)
