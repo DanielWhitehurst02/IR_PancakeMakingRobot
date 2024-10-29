@@ -23,7 +23,7 @@ function robot_and_pancake(app)
 
 
     cubePoints1 = []
-    %% Setting up workspace
+%% Setting up workspace
 workspace = [-2,3,-3,2.5,0,2];
 hold on
 axis equal
