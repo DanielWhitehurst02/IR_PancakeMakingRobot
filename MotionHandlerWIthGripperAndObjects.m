@@ -33,6 +33,18 @@ classdef MotionHandlerWIthGripperAndObjects
         lightCurtain  % Instance of LightCurtain for breach detection
         handHandle    % Handle for the loaded object (e.g., hand object)
         lightCurtainStartOffset
+
+
+
+        % dedication for pancake 
+        pancakeMesh  % Handle for the pancake mesh
+        pancakeVertices
+        isPancakeAttached = false;  % Boolean to check if pancake is attached to end effector
+        dropLocation  % Predefined drop location for the pancake
+        dropCondition = false;  % Flag to trigger the drop action
+
+
+
          % 
          % serialUsed = true;
          % serialportname = "/dev/ttyUSB0";
@@ -363,6 +375,48 @@ classdef MotionHandlerWIthGripperAndObjects
             end
         end
 
+        
+        function attachPancake(self)
+            if self.isPancakeAttached
+                % Get the full transformation matrix of the end effector
+                endEffectorTr = self.robot.model.fkine(self.robot.model.getpos).T;
+        
+                % Define the offset as a translation matrix
+                offsetTranslation = transl(0.1, 0, -0.1);
+        
+                % Combine the end effector transformation with the offset translation
+                pancakeTransform = endEffectorTr * offsetTranslation;
+        
+                % Apply the combined transformation to the pancake vertices
+                transformedVertices = [self.pancakeVertices, ones(size(self.pancakeVertices, 1), 1)] * pancakeTransform';
+        
+                % Update pancake mesh vertices
+                set(self.pancakeMesh, 'Vertices', transformedVertices(:, 1:3));  % Update pancake position
+            end
+        end
+
+
+
+
+
+        function dropPancake(self)
+            if self.dropCondition
+                % Define transformation for drop location
+                dropTransform = transl(self.dropLocation);
+        
+                % Update pancake vertices to the drop location
+                transformedVertices = [self.pancakeVertices, ones(size(self.pancakeVertices, 1), 1)] * dropTransform';
+                set(self.pancakeMesh, 'Vertices', transformedVertices(:, 1:3));  % Place pancake at drop location
+        
+                % Detach pancake and reset the drop condition
+                self.isPancakeAttached = false;
+                self.dropCondition = false;
+            end
+        end
+
+
+
+
 
         % Run RMRC with gripper synchronization
         function runRMRC(self, endTr, time, deltaT, varargin)
@@ -382,7 +436,29 @@ classdef MotionHandlerWIthGripperAndObjects
             else
                 startTr = startTr_struct;
             end
+            
 
+            % Check if mesh_h and vertices were provided (first set of optional parameters)
+            % Optional mesh for visualization
+            if length(varargin) >= 2
+                mesh_h = varargin{1};
+                vertices = varargin{2};
+            else
+                mesh_h = [];
+                vertices = [];
+            end
+            
+            % Optional pancake mesh attachment
+            if length(varargin) >= 3
+                self.pancakeMesh = varargin{3};
+                self.pancakeVertices = varargin{4};
+                self.isPancakeAttached = true;
+            else
+                self.pancakeMesh = [];
+                self.pancakeVertices = [];
+                self.isPancakeAttached = false;
+            end
+            
 
             [s, ~] = self.RMRC.ResolvedMotionRateControlPath(self.getCurrentPos(), endTr, steps);
         
@@ -390,13 +466,13 @@ classdef MotionHandlerWIthGripperAndObjects
             W = diag([1 1 1 0.1 0.1 0.1]);  % Weighting matrix for control
         
             % Check if mesh_h and vertices were provided
-            if nargin > 5
-                mesh_h = varargin{1};
-                vertices = varargin{2};
-            else
-                mesh_h = [];
-                vertices = [];
-            end
+            %if nargin > 5
+            %    mesh_h = varargin{1};
+            %    vertices = varargin{2};
+            %else
+            %    mesh_h = [];
+            %    vertices = [];
+            %end
         
 
             redHandle = 0
@@ -426,6 +502,12 @@ classdef MotionHandlerWIthGripperAndObjects
                     self.checkForLightCurtainBreachAndPause(adjustedIteration);
                 end
 
+
+                
+                % Attach pancake if currently attached
+                if self.isPancakeAttached && ~isempty(self.pancakeMesh) && ~isempty(self.pancakeVertices)
+                    self.attachPancake();
+                end
 
 
                 % Interpolate position and orientation

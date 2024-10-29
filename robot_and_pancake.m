@@ -126,19 +126,28 @@ end
     
 
 
-    % Place the pancake at an initial position
+    % Place the pancake at an initial position after the dough
     mesh_hPancake = PlaceObject('pancake2.ply');
     verticesPancake = get(mesh_hPancake, 'Vertices');
     transformedVertices = [verticesPancake, ones(size(verticesPancake, 1), 1)] * transl([-0.1, 0.2, 0.7])';
     set(mesh_hPancake, 'Vertices', transformedVertices(:, 1:3)); % Update pancake's initial position
     
-
-
-
+    
+   %% we attach the pancake to the gripper
+    motionHandler1.runRMRC(endTr4,time,deltaT,mesh_hSpatula,verticesSpatula,mesh_hPancake,verticesPancake);
+   
     
     % Move robot away, leaving pancake at the drop position
     endTr5 = transl(-0.1, 0.2, 0.9) * troty(pi/2) * trotz(pi/2);
-    motionHandler1.runRMRC(endTr5, time, deltaT, mesh_hSpatula, verticesSpatula);
+    motionHandler1.runRMRC(endTr5, time, deltaT, mesh_hSpatula, verticesSpatula,mesh_hPancake,verticesPancake );
+    
+    
+    %Set new location for the pancake
+    delete(mesh_hPancake); %% We delete the previous one
+    mesh_hPancake = PlaceObject('pancake2.ply');
+    verticesPancake = get(mesh_hPancake, 'Vertices')
+    transformedVertices = [verticesPancake, ones(size(verticesPancake, 1), 1)] * transl([-0.3, -0.33, 0.57])';
+    set(mesh_hPancake, 'Vertices', transformedVertices(:, 1:3)); % Update pancake's initial position
 
 
     endTr6 = transl(-0.1,0.2,0.8)*troty(pi/2)*trotz(pi/2);
